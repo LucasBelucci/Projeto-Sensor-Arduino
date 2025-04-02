@@ -1,3 +1,5 @@
+# Import e Setup
+
 from pathlib import Path
 import os
 import numpy as np
@@ -23,6 +25,8 @@ ANOMALY_OPS = [
 SAMPLE_RATE = 200
 SAMPLE_TIME = 0.5
 
+# Valores para treinamento
+
 VAL_RATIO = 0.2
 TEST_RATIO = 0.2
 MAX_ANOMALY_SAMPLES = 100
@@ -36,13 +40,16 @@ def get_data_files(operations):
         files.extend(list((DATASET_PATH / op).glob("*.csv")))
     return files
 
-# %%
 def load_and_extract_files(file_path):
     data = np.genfromtxt(file_path, delimiter=",")
     data = data - np.mean(data, axis=0)
 
+    # Adicionando ruído para melhorar o treinamento
+
     noise = np.random.normal(0, 0.3, data.shape)
     data = data + noise
+
+    # Extraindo features por eixo
 
     features = []
     for axis_idx in range(data.shape[1]):
@@ -59,6 +66,9 @@ def load_and_extract_files(file_path):
     return np.array(features)
 
 def create_dataset(files, max_samples=50):
+
+    # Se tiver mais arquivos do que o max_samples, eles serão escolhidos de maneira aleatória
+
     if len(files) > max_samples:
         files = np.random.choice(files, max_samples, replace=False)
 
@@ -96,7 +106,11 @@ def find_optimal_threshold(normal_dist, anomaly_dist, n_splits=5):
             fp_rate = np.mean(normal_pred)
             tp_rate = np.mean(anomaly_pred)
 
+            # Penalização para resultados muito altos
+
             score = tp_rate - (5 * fp_rate)
+
+            # Penalização para resultados perfeitos, indicando overfitting
 
             if fp_rate == 0 or tp_rate == 1:
                 score *= (
@@ -109,6 +123,8 @@ def find_optimal_threshold(normal_dist, anomaly_dist, n_splits=5):
 
         avg_score = np.mean([m["score"] for m in fold_metrics])
         score_std = np.std([m["score"] for m in fold_metrics])
+
+        # Preferência por resultados mais estáveis
 
         final_score = avg_score - (2 * score_std)
 
@@ -138,6 +154,8 @@ def find_optimal_threshold(normal_dist, anomaly_dist, n_splits=5):
             "auc": roc_auc_score(y_true, distances)
         }
 
+        # Calculo da taxa de falsos positivos
+
         fp = np.sum((y_true == 0) & (y_pred == 1))
         results["false_positive_rate"] = fp/len(normal_distances)
 
@@ -156,12 +174,12 @@ def plot_distance_distributions(normal_dist, anomaly_dist, threshold=None):
 
     if threshold is not None:
         plt.axvline(
-            x=threshold, color="k", linestyle="--", label=f"Threshold: {threshold:.2f}"
+            x=threshold, color="k", linestyle="--", label=f"Limiar: {threshold:.2f}"
         )
 
-    plt.xlabel("Mahalanobis Distance")
-    plt.ylabel("Density")
-    plt.title("Distribution of Mahalanobis Distance")
+    plt.xlabel("Distância de Mahalanobis")
+    plt.ylabel("Densidade")
+    plt.title("Distribuição da Distância de Mahalanobis")
     plt.legend()
     plt.grid(True, alpha=0.9)
     plt.show()
@@ -176,11 +194,11 @@ def plot_roc_curve(normal_distances, anomaly_distances):
     auc = roc_auc_score(y_true, distances)
 
     plt.figure(figsize=(8, 8))
-    plt.plot(fpr, tpr, label=f"ROC Curve (AUC = {auc:.3f})")
+    plt.plot(fpr, tpr, label=f"Curva ROC (AUC = {auc:.3f})")
     plt.plot([0, 1], [0,1], "k--", label="Random")
-    plt.xlabel("False positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title("ROC Curve")
+    plt.xlabel("Taxa de Falsos positivos")
+    plt.ylabel("Taxa de Verdadeiros positivos")
+    plt.title("Curva ROC")
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.show()
@@ -192,47 +210,65 @@ def plot_confusion_matrix(y_true, y_pred):
         pd.DataFrame(cm, index=["Normal", "Anomaly"], columns=["Normal", "Anomaly"]),
                      annot=True, fmt="d", cmap="Blues",
     )
-    plt.title("Confusion Matrix")
+    plt.title("Matriz de Confusão")
     plt.xlabel("Predicted Label")
     plt.ylabel("True Label")
     plt.show()
 
 def train_model():
+    # Carrega e prepara os dados 
+
     normal_files = get_data_files(NORMAL_OPS)
     anomaly_files = get_data_files(ANOMALY_OPS)
-    print(f"Found {len(normal_files)} normal files and {len(anomaly_files)} anomaly files")
+    print(f"Encontrado: {len(normal_files)} arquivos normais e {len(anomaly_files)} arquivo anomalos")
+
+    # Separa os dados normais
 
     train_files, test_files = train_test_split(normal_files, test_size=0.4, random_state=42)
+
+    # Criação dos datasets
 
     X_train = create_dataset(train_files)
     X_test = create_dataset(test_files)
     X_anomaly = create_dataset(anomaly_files)
+
+    # Features do Scaler
 
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     X_anomaly_scaled = scaler.transform(X_anomaly)
 
+    # Modelo de treino
+
     mu = np.mean(X_train_scaled, axis=0)
     cov = np.cov(X_train_scaled.T)
+
+    # Encontrando o limiar com 5% de taxa de falso positivo
 
     normal_dist = mahalonobis_distance(X_test_scaled, mu, cov)
     anomaly_dist = mahalonobis_distance(X_anomaly_scaled, mu, cov)
     threshold = np.percentile(normal_dist, 95)
 
+    # Avaliação
+
     y_true = np.concatenate([np.zeros(len(X_test)), np.ones(len(X_anomaly))])
     y_pred = np.concatenate([normal_dist > threshold, anomaly_dist > threshold]).astype(int)
 
-    print("\nClassification Report:")
+    # Mostrando os resultados através dos plots e dos prints
+
+    print("\nResultado da Classificação:")
     print(classification_report(y_true, y_pred, target_names=["Normal", "Anomaly"]))
     print(f"AUC Score: {roc_auc_score(y_true, np.concatenate([normal_dist, anomaly_dist])):.3f}")
 
     plot_distance_distributions(normal_dist, anomaly_dist, threshold)
     plot_confusion_matrix(y_true, y_pred)
     
+    # Salvando o modelo de treinamento gerado
+
     os.makedirs("models", exist_ok=True)
     np.savez(MODEL_PATH, mu=mu, cov=cov, threshold=threshold, scaler=scaler)
-    print(f"\nModel saved to {MODEL_PATH}")
+    print(f"\nModelo salvo em {MODEL_PATH}")
 
 if __name__ == "__main__":
     train_model()

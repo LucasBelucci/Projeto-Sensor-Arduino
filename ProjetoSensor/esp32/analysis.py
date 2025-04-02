@@ -141,6 +141,11 @@ def analyze_statistics(sample_file):
 
     return stats_dict
 
+# Para extração de algumas características importantes, é realizado a aplicação da janela de Hann, minimizando os efeitos de descontinuidade nas extremidades
+# dos sinais, sabendo que estamos utilizando sinais reais, a FFT será simétrica, e portanto, apenas a primeira metade dos valores contém informações úteis
+# Aplicando então a janela nos dados antes de realizar a FFT, calculando apenas a parte positiva, extraindo a magnitude e ignorando as fases, 
+# será obtido uma matriz com as frequências extraídas de cada eixo após ignorar a simetria
+
 def extract_fft_features(sample):
     hann_widow = np.hanning(sample.shape[0])
 
@@ -150,6 +155,8 @@ def extract_fft_features(sample):
         out_sample[:, i] = fft[1:]
 
     return out_sample
+
+# Geração de um gráfico comparativo das frequências entre operações normais e anômalas, ideal para identificar padrões de vibração atípicos
 
 def plot_fft_comparison(normal_files, anomaly_files, num_samples=200, start_bin=1):
     normal_ffts = []
@@ -208,4 +215,3 @@ for key, value in stat_results.items():
     print()
 
 plot_fft_comparison(normal_files, anomaly_files)
-# %%

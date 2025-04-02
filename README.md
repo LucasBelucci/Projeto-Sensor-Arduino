@@ -27,6 +27,7 @@ Este projeto tem como objetivo a construção de um modelo capaz de captar as fr
 
 ### Principais aprendizados
 - A utilização de métricas mais eficientes, permitem que o algoritmo utilizado seja otimizado ao ponto de ser possível identificar individualmente cada componente presente no equipamento analisado
+- Técnicas de avaliação tais como distância de Mahalonobis são pouco utilizadas na grande maioria de exemplos encontrados pela internet, então ter utilizado, permitiu uma maior compreensão da sua importância e trouxe novos insights com relação a avaliação de algoritmos
 - Apesar da complexidade de métricas apresentadas durante o projeto, as fundamentais foram as estatísticas básicas em conjunto com a análise de Fourier (FFT), permitindo a identificação com clareza das anomalias
 
 ### Tratamento de dados

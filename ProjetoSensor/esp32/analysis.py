@@ -21,10 +21,15 @@ def get_data_files(operations):
     return files
 
 def load_samples(file_path, remove_dc = False):
-    data = np.genfromtxt(file_path, delimiter=",")
-    if remove_dc:
-        data = data - np.mean(data, axis=0)
-    return data
+    try:
+        data = np.genfromtxt(file_path, delimiter=",")
+        #print(f"{file_path}: shape{data.shape}")
+        if remove_dc:
+            data = data - np.mean(data, axis=0)
+        return data
+    except Exception as e:
+        print(f"Erro ao carregar {file_path}: {e}")
+        return None
 
 # Funções responsáveis pelos gráficos comparativos que serão gerados entre as informações normais e as anomalias, através de gráficos de linha, dispersão em 3D
 def plot_comparison(normal_file, anomaly_file, remove_dc=False):
@@ -75,11 +80,17 @@ def plot_3d_scatter(normal_files, anomaly_files, num_samples=3, feature_type="ra
         elif feature_type == "kurtosis":
             normal_data.append(stats.kurtosis(normal_sample))
             anomaly_data.append(stats.kurtosis(anomaly_sample))
+        elif feature_type == "entropy":
+            normal_data.append(stats.entropy(np.abs(normal_sample)))
+            anomaly_data.append(stats.entropy(np.abs(anomaly_sample)))
+        elif feature_type == "energy":
+            normal_data.append(np.square(normal_sample))
+            anomaly_data.append(np.square(normal_sample))
         else:
             normal_data.append(normal_sample)
             anomaly_data.append(anomaly_sample)
 
-    if feature_type in ['mean', 'variance', 'kurtosis']:
+    if feature_type in ['mean', 'variance', 'kurtosis', "entropy", "energy"]:
         normal_data = np.array(normal_data)
         anomaly_data = np.array(anomaly_data)
 
@@ -123,6 +134,57 @@ def plot_3d_scatter(normal_files, anomaly_files, num_samples=3, feature_type="ra
     ax.set_title(f"3D Visualização de {feature_type.capitalize()} Data")
 
     return fig
+
+
+def plot_histograms(normal_files, anomaly_files):
+    
+    #for f in normal_files:
+    #    print(f"Verificando arquivo: {f}")
+    #    print(f"Existe? {Path(f).exists()}")
+
+    plt.figure(figsize=(12, 6))
+
+    #normal_valid = [s for s in normal_files if isinstance(s, np.ndarray) and s.ndim == 2 and s.shape[1] >= 3]
+    #anomaly_valid = [s for s in anomaly_files if isinstance(s, np.ndarray) and s.ndim == 2 and s.shape[1] >= 3]
+    normal_valid = []
+    anomaly_valid = []
+    for f in normal_files:
+        sample = load_samples(f)
+        if sample is not None:
+            normal_valid.append(sample)
+    
+    
+    for f in anomaly_files:
+        sample = load_samples(f)
+        if sample is not None:
+            anomaly_valid.append(sample)
+
+    print(f'Amostras válidas normais: {len(normal_valid)}')
+    print(f'Amostras válidas anormais: {len(anomaly_valid)}')
+
+    if not normal_valid or not anomaly_valid:
+        raise ValueError("Não há amostras válidas para plotar")
+    
+    num_features = normal_valid[0].shape[1]
+    axis_labels = ["X-axis", "Y-axis", "Z-axis"]
+    #num_features = len(axis_labels)
+    
+    for i in range(num_features):
+        plt.subplot(2, 3, i+1)
+        
+        normal_feature_values = [sample[:, i] for sample in normal_valid]
+        anomaly_feature_values = [sample[:, i] for sample in anomaly_valid]
+
+        normal_flat = np.concatenate(normal_feature_values)
+        anomaly_flat = np.concatenate(anomaly_feature_values)
+
+        sns.histplot(normal_flat, color='blue', label='Normal', kde=True)
+        sns.histplot(anomaly_flat, color="red", label="Anomaly", kde=True)
+        plt.legend()
+        plt.title(axis_labels[i])
+    
+    plt.tight_layout()
+    plt.show()
 
 # Definição das estatísticas básicas que serão utilizadas como critérios de avaliação de desempenho dos algoritmos de aprendizado, são elas Média, variância, Kurtosis, Skew, MAD e correlação
 
@@ -206,7 +268,10 @@ plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='raw'
 plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='mean')
 plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='variance')
 plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='kurtosis')
+plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='entropy')
+plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='energy')
 
+plot_histograms(normal_files, anomaly_files)
 
 stat_results = analyze_statistics(normal_files[0])
 for key, value in stat_results.items():

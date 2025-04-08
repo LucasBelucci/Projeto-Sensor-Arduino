@@ -1,6 +1,7 @@
 # %% Setup
 from pathlib import Path
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
@@ -184,7 +185,8 @@ def plot_histograms(normal_files, anomaly_files):
         plt.title(axis_labels[i])
     
     plt.tight_layout()
-    plt.show()
+    if matplotlib.get_backend().lower() != 'agg':
+        plt.show()
 
 # Definição das estatísticas básicas que serão utilizadas como critérios de avaliação de desempenho dos algoritmos de aprendizado, são elas Média, variância, Kurtosis, Skew, MAD e correlação
 

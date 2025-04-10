@@ -5,7 +5,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from unittest.mock import patch
-
+import tempfile
+import os
 
 # Caminho para o diretório raiz do projeto
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,18 +53,28 @@ def test_analyze_statistics(mock_load_sample):
 @patch("esp32.analysis.load_samples")
 def test_plot_fft_comparison(mock_load_sample, mock_extract_fft):
     fake_sample = np.random.randn(100, 3)
+    normal_files = ["normal.csv", "normal_2.csv"]
+    anomaly_files = ["anomaly.csv", "anomaly_2.csv"]
+
+    
     mock_load_sample.return_value = fake_sample
 
     fake_fft = np.abs(np.random.randn(50, 3)) + 0.1
     mock_extract_fft.return_value = fake_fft
-
-    normal_files = ["normal.csv", "normal_2.csv"]
-    anomaly_files = ["anomaly.csv", "anomaly_2.csv"]
-
-    fig = plot_fft_comparison(normal_files, anomaly_files, num_samples=2)
+    try: 
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+    
+            fig = plot_fft_comparison(normal_files, anomaly_files, num_samples=2, save_path=tmp_file.name)
+            assert os.path.exists(tmp_file.name)
+            assert os.path.getsize(tmp_file.name) > 0
+    finally:
+            os.remove(tmp_file.name)
+    
+    #fig = plot_fft_comparison(normal_files, anomaly_files, num_samples=2)
 
     assert isinstance(fig, plt.Figure)
     assert len(fig.axes) == 3
     assert fig.axes[0].get_title() != ""
 
     plt.close(fig)
+    

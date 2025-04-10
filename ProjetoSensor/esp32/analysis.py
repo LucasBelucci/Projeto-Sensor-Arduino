@@ -222,16 +222,20 @@ def extract_fft_features(sample):
 
 # Geração de um gráfico comparativo das frequências entre operações normais e anômalas, ideal para identificar padrões de vibração atípicos
 
-def plot_fft_comparison(normal_files, anomaly_files, num_samples=200, start_bin=1):
+def plot_fft_comparison(normal_files, anomaly_files, num_samples=200, start_bin=1, save_path=None):
     normal_ffts = []
     anomaly_ffts = []
 
+    if len(normal_files) < num_samples or len(anomaly_files) < num_samples:
+        raise ValueError("Número de arquivos insuficientes para o valor de num_samples")
+    
     for i in range(min(num_samples, len(normal_files))):
         normal_sample = load_samples(normal_files[i])
         anomaly_sample = load_samples(anomaly_files[i])
         normal_ffts.append(extract_fft_features(normal_sample))
         anomaly_ffts.append(extract_fft_features(anomaly_sample))
 
+    
     normal_ffts = np.array(normal_ffts)
     anomaly_ffts = np.array(anomaly_ffts)
     normal_fft_avg = np.average(normal_ffts, axis=0)
@@ -252,7 +256,11 @@ def plot_fft_comparison(normal_files, anomaly_files, num_samples=200, start_bin=
         ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    return fig
+    if save_path == None:
+        return fig
+    else:
+        plt.savefig(save_path)
+        return fig
 
 # %%
 
@@ -281,4 +289,4 @@ for key, value in stat_results.items():
     print(value)
     print()
 
-plot_fft_comparison(normal_files, anomaly_files)
+plot_fft_comparison(normal_files, anomaly_files, save_path=None)

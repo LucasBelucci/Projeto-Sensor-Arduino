@@ -5,6 +5,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
+from typing import Union, Tuple
 7
 # %% Definição dos caminhos, nomes das pastas, taxa de amostragem em Hz e em segundos
 DATASET_PATH = Path("ProjetoSensor/datasets/ac")
@@ -205,21 +206,118 @@ def analyze_statistics(sample_file):
 
     return stats_dict
 
+# Extração das estatísticas para utilização em ML
+def extract_ml_features(sample: np.ndarray) -> np.ndarray:
+    """
+    Extrai features estatísticas e de frequência de um sinal multivariado
+
+    Args:
+        sample(np.ndarray): Sinal de entrada com shape(n_samples, n_axes)
+
+    Returns:
+        np.ndarray: Vetor 1D com as features extraidas
+    """
+
+    if not isinstance(sample, np.ndarray) or sample.ndim != 2:
+        raise ValueError("Entrada precisa ser um np.ndarray 2D")
+    
+    features = []
+
+    # Domínio do tempo
+    features.append(np.mean(sample, axis=0)) # shape: (n_axes, )
+    features.append(np.var(sample, axis=0))
+    features.append(stats.skew(sample, axis=0))
+    features.append(stats.kurtosis(sample, axis=0))
+    features.append(np.mean(np.abs(sample - np.mean(sample, axis=0)), axis=0))
+
+    # Correlação entre eixos
+    corr_matrix = np.corrcoef(sample.T) # shape: (n_axes, n_axes)
+    tril_indices = np.tril_indices_from(corr_matrix, k=-1)
+    features.append(corr_matrix[tril_indices])  # shape: (n_combinations, )
+
+    # Domínio da frequência
+    fft = extract_fft_features(sample, include_dc=False)    # shape: (n_freqs, n_axes)
+
+    features.append(np.mean(fft, axis=0))   # Média das magnitudes FFT
+    features.append(np.std(fft, axis=0))    # Desvio padrão das FFT
+    features.append(np.sum(fft**2, axis=0)) # Energia
+    features.append(np.argmax(fft, axis=0)) # Freq. Dominante (índice de máxima magnitude)
+
+    # Concatena tudo em um vetor 1D
+    return np.concatenate(features)
+
 # Para extração de algumas características importantes, é realizado a aplicação da janela de Hann, minimizando os efeitos de descontinuidade nas extremidades
 # dos sinais, sabendo que estamos utilizando sinais reais, a FFT será simétrica, e portanto, apenas a primeira metade dos valores contém informações úteis
 # Aplicando então a janela nos dados antes de realizar a FFT, calculando apenas a parte positiva, extraindo a magnitude e ignorando as fases, 
 # será obtido uma matriz com as frequências extraídas de cada eixo após ignorar a simetria
 
-def extract_fft_features(sample):
-    hann_widow = np.hanning(sample.shape[0])
+def extract_fft_features(
+        sample: np.ndarray,
+        include_dc: bool = False,
+        window: str = "hann",
+        return_freqs: bool = False,
+        sampling_rate: float = 1.0
+    ) -> np.ndarray | Tuple[np.ndarray, np.ndarray]:
+    
+    """
+    Extrai caracteristicas de FFT de um sinal multivariado
 
-    out_sample = np.zeros((int(sample.shape[0]/2),  sample.shape[1]))
+    Args:
+        sample(np.ndarray): Sinal com shape (n_samples, n_axes)
+        include_dc(bool): Se True, inclui a componente DC(frequência 0)
+        window(str): Tipo de janela a ser aplicada('hann', 'hamming', None)
+    
+    Returns:
+        np.ndarray: FFT do sinal com shape(n_samples//2, n_axes)
+        np.ndarray(opcional): Frequências associadas a cada componente da FFT
+    """
+
+    if not isinstance(sample, np.ndarray):
+            raise TypeError("Entrada deve ser um np.ndarray")
+        
+    if sample.ndim != 2:
+        raise ValueError("Entrada deve ter 2 dimensões")
+    
+    n_samples, n_axes = sample.shape # sample.shape[0] = dimensão // sample.shape[1] = amostras
+    freqs = np.fft.rfftfreq(n_samples, d=1.0 / sampling_rate)
+    
+    if n_samples < 2:
+        raise ValueError("Número de amostras deve ser maior ou igual a 2")
+    
+    # Seleção da janela:
+    if window == 'hann':
+        window_values = np.hanning(n_samples)
+    elif window == 'hamming':
+        window_values = np.hamming(n_samples)
+    elif window is None:
+        window_values = np.ones(n_samples)
+    else:
+        raise ValueError(f'Tipo de janela nao suportado: {window}')
+    
+    # Tamanho da FFT (Considerando ou não a componente DC)
+    fft_len = len(np.fft.rfft(sample[:, 0] * window_values))
+    if not include_dc:
+        fft_len -= 1
+
+    # Aplicando uma janela FFT em cada eixo da amostra e ignorando a componente DC
+    out_sample = np.zeros((fft_len, n_axes))
+    output_freqs = freqs if include_dc else freqs[1:]
+
     for i, axis in enumerate(sample.T):
-        fft = abs(np.fft.rfft(axis*hann_widow))
-        out_sample[:, i] = fft[1:]
+        fft = np.abs(np.fft.rfft(axis * window_values)) / n_samples # Normalizando a FFT, garantindo a compatibilidade entre diferentes sinais ou janelas
+        if n_samples % 2 == 0:
+            fft[1:-1] *= 2 # par: dobra todas, exceto DC e Nyquist
+        else:
+            fft[1:] *= 2    # impar: dobra todas, exceto DC (Não tem Nyquist exato)
+        out_sample[:, i] = fft if include_dc else fft[1:] # Ignorando a componente DC
+    
+    if return_freqs:
+        return out_sample, output_freqs
+    else:
+        return out_sample
 
-    return out_sample
 
+        
 # Geração de um gráfico comparativo das frequências entre operações normais e anômalas, ideal para identificar padrões de vibração atípicos
 
 def plot_fft_comparison(normal_files, anomaly_files, num_samples=200, start_bin=1, save_path=None):

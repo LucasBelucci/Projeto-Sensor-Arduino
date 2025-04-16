@@ -12,6 +12,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import (confusion_matrix, classification_report,
                              precision_score, recall_score, f1_score, accuracy_score,
                              roc_auc_score, roc_curve)
+from analysis import (plot_3d_scatter, plot_comparison, plot_confusion_matrix, plot_distance_distributions,
+                      plot_fft_comparison, plot_histograms, plot_roc_curve, extract_fft_features, extract_ml_features,
+                      mahalonobis_distance)
 
 DATASET_PATH = Path("ProjetoSensor/datasets/ac")
 NORMAL_OPS = ["silent_0_baseline"]
@@ -50,7 +53,7 @@ def load_and_extract_files(file_path):
     data = data + noise
 
     # Extraindo features por eixo
-
+    '''
     features = []
     for axis_idx in range(data.shape[1]):
         axis_data = data[:, axis_idx]
@@ -64,6 +67,8 @@ def load_and_extract_files(file_path):
             ]
         )
     return np.array(features)
+    '''
+    return extract_ml_features(data)
 
 def create_dataset(files, max_samples=50):
 
@@ -74,146 +79,6 @@ def create_dataset(files, max_samples=50):
 
     features = [load_and_extract_files(f) for f in files]
     return np.array(features)
-
-def mahalonobis_distance(x, mu, cov):
-    x_mu = x - mu
-    inv_convmat = np.linalg.inv(cov + 1e-6 * np.eye(cov.shape[0]))
-    return np.sqrt(np.sum(np.dot(x_mu, inv_convmat) * x_mu, axis=1))
-
-def find_optimal_threshold(normal_dist, anomaly_dist, n_splits=5):
-    normal_range = np.percentile(normal_dist, [75, 99])
-    anomaly_range = np.percentile(anomaly_dist, [1, 25])
-
-    thresholds = np.linspace(normal_range[0], anomaly_range[1], 100)
-
-    best_score = -np.inf
-    best_threshold = None
-    best_metrics = None
-
-    for threshold in thresholds:
-        fold_metrics = []
-        for _ in range(n_splits):
-            normal_mask = np.random.choice(
-                [True, False], len(normal_dist), p=[0.7, 0.3]
-            )
-            anomaly_mask = np.random.choice(
-                [True, False], len(anomaly_dist), p=[0.7, 0.3]
-            )
-
-            normal_pred = normal_dist[normal_mask] > threshold
-            anomaly_pred = anomaly_dist[anomaly_mask] > threshold
-
-            fp_rate = np.mean(normal_pred)
-            tp_rate = np.mean(anomaly_pred)
-
-            # Penalização para resultados muito altos
-
-            score = tp_rate - (5 * fp_rate)
-
-            # Penalização para resultados perfeitos, indicando overfitting
-
-            if fp_rate == 0 or tp_rate == 1:
-                score *= (
-                    0.5
-                )
-
-            fold_metrics.append(
-                {"score": score, "fp_rate": fp_rate, "tp_rate": tp_rate}
-            )
-
-        avg_score = np.mean([m["score"] for m in fold_metrics])
-        score_std = np.std([m["score"] for m in fold_metrics])
-
-        # Preferência por resultados mais estáveis
-
-        final_score = avg_score - (2 * score_std)
-
-        if final_score > best_score:
-            best_score = final_score
-            best_threshold = threshold
-            best_metrics = {
-                "fp_rate": np.mean([m["fp_rate"] for m in fold_metrics]),
-                "tp_rate": np.mean([m["tp_rate"] for m in fold_metrics])
-            }
-
-        return best_threshold, best_metrics
-    
-    def validate_model(normal_distances, anomaly_distances, threshold):
-        y_true = np.concatenate(
-            [np.zeros(len(normal_distances)), np.ones(len(anomaly_distances))]
-        )
-        
-        distances = np.concatenate([normal_distances, anomaly_distances])
-        y_pred = (distances > threshold).astype(int)
-
-        results = {
-            "accuracy": accuracy_score(y_true, y_pred),
-            "precision": precision_score(y_true, y_pred),
-            "recall": recall_score(y_true, y_pred),
-            "f1": f1_score(y_true, y_pred),
-            "auc": roc_auc_score(y_true, distances)
-        }
-
-        # Calculo da taxa de falsos positivos
-
-        fp = np.sum((y_true == 0) & (y_pred == 1))
-        results["false_positive_rate"] = fp/len(normal_distances)
-
-        return results
-    
-def plot_distance_distributions(normal_dist, anomaly_dist, threshold=None):
-    plt.figure(figsize=(12, 6))
-    n_bins = int(np.sqrt(len(normal_dist) + len(anomaly_dist)))
-
-    plt.hist(
-        normal_dist, bins=n_bins, alpha=0.7, label="Normal", color="blue", density=True
-    )
-    plt.hist(
-        anomaly_dist, bins=n_bins, alpha=0.7, label="Anomaly", color="red", density=True
-    )
-
-    if threshold is not None:
-        plt.axvline(
-            x=threshold, color="k", linestyle="--", label=f"Limiar: {threshold:.2f}"
-        )
-
-    plt.xlabel("Distância de Mahalanobis")
-    plt.ylabel("Densidade")
-    plt.title("Distribuição da Distância de Mahalanobis")
-    plt.legend()
-    plt.grid(True, alpha=0.9)
-    plt.show()
-
-def plot_roc_curve(normal_distances, anomaly_distances):
-    y_true = np.concatenate(
-        [np.zeros(len(normal_distances)), np.ones(len(anomaly_distances))]
-    )
-    distances = np.concatenate([normal_distances, anomaly_distances])
-
-    fpr, tpr, _ = roc_curve(y_true, distances)
-    auc = roc_auc_score(y_true, distances)
-
-    plt.figure(figsize=(8, 8))
-    plt.plot(fpr, tpr, label=f"Curva ROC (AUC = {auc:.3f})")
-    plt.plot([0, 1], [0,1], "k--", label="Random")
-    plt.xlabel("Taxa de Falsos positivos")
-    plt.ylabel("Taxa de Verdadeiros positivos")
-    plt.title("Curva ROC")
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.show()
-
-def plot_confusion_matrix(y_true, y_pred):
-    cm = confusion_matrix(y_true, y_pred)
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(
-        pd.DataFrame(cm, index=["Normal", "Anomaly"], columns=["Normal", "Anomaly"]),
-                     annot=True, fmt="d", cmap="Blues",
-    )
-    plt.title("Matriz de Confusão")
-    plt.xlabel("Predicted Label")
-    plt.ylabel("True Label")
-    plt.show()
 
 def train_model():
     # Carrega e prepara os dados 
@@ -263,6 +128,9 @@ def train_model():
 
     plot_distance_distributions(normal_dist, anomaly_dist, threshold)
     plot_confusion_matrix(y_true, y_pred)
+    plot_roc_curve(normal_dist, anomaly_dist)
+
+    plt.show()
     
     # Salvando o modelo de treinamento gerado
 

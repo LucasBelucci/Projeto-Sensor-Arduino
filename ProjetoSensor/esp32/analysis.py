@@ -5,8 +5,14 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
-from typing import Union, Tuple
-7
+from typing import Tuple
+import os
+import pandas as pd
+from sklearn.metrics import (confusion_matrix, classification_report,
+                             precision_score, recall_score, f1_score, accuracy_score,
+                             roc_auc_score, roc_curve)
+
+
 # %% Definição dos caminhos, nomes das pastas, taxa de amostragem em Hz e em segundos
 DATASET_PATH = Path("ProjetoSensor/datasets/ac")
 NORMAL_OPS = ["silent_0_baseline"]
@@ -161,8 +167,8 @@ def plot_histograms(normal_files, anomaly_files):
         if sample is not None:
             anomaly_valid.append(sample)
 
-    print(f'Amostras válidas normais: {len(normal_valid)}')
-    print(f'Amostras válidas anormais: {len(anomaly_valid)}')
+    print(f'Amostras normais válidas: {len(normal_valid)}')
+    print(f'Amostras anormais válidas: {len(anomaly_valid)}')
 
     if not normal_valid or not anomaly_valid:
         raise ValueError("Não há amostras válidas para plotar")
@@ -360,17 +366,182 @@ def plot_fft_comparison(normal_files, anomaly_files, num_samples=200, start_bin=
         plt.savefig(save_path)
         return fig
 
+# --------------- ##
+
+def mahalonobis_distance(x, mu, cov):
+    x_mu = x - mu
+    inv_convmat = np.linalg.inv(cov + 1e-6 * np.eye(cov.shape[0]))
+    return np.sqrt(np.sum(np.dot(x_mu, inv_convmat) * x_mu, axis=1))
+
+def find_optimal_threshold(normal_dist, anomaly_dist, n_splits=5):
+    normal_range = np.percentile(normal_dist, [75, 99])
+    anomaly_range = np.percentile(anomaly_dist, [1, 25])
+
+    thresholds = np.linspace(normal_range[0], anomaly_range[1], 100)
+
+    best_score = -np.inf
+    best_threshold = None
+    best_metrics = None
+
+    for threshold in thresholds:
+        fold_metrics = []
+        for _ in range(n_splits):
+            normal_mask = np.random.choice(
+                [True, False], len(normal_dist), p=[0.7, 0.3]
+            )
+            anomaly_mask = np.random.choice(
+                [True, False], len(anomaly_dist), p=[0.7, 0.3]
+            )
+
+            normal_pred = normal_dist[normal_mask] > threshold
+            anomaly_pred = anomaly_dist[anomaly_mask] > threshold
+
+            fp_rate = np.mean(normal_pred)
+            tp_rate = np.mean(anomaly_pred)
+
+            # Penalização para resultados muito altos
+
+            score = tp_rate - (5 * fp_rate)
+
+            # Penalização para resultados perfeitos, indicando overfitting
+
+            if fp_rate == 0 or tp_rate == 1:
+                score *= (
+                    0.5
+                )
+
+            fold_metrics.append(
+                {"score": score, "fp_rate": fp_rate, "tp_rate": tp_rate}
+            )
+
+        avg_score = np.mean([m["score"] for m in fold_metrics])
+        score_std = np.std([m["score"] for m in fold_metrics])
+
+        # Preferência por resultados mais estáveis
+
+        final_score = avg_score - (2 * score_std)
+
+        if final_score > best_score:
+            best_score = final_score
+            best_threshold = threshold
+            best_metrics = {
+                "fp_rate": np.mean([m["fp_rate"] for m in fold_metrics]),
+                "tp_rate": np.mean([m["tp_rate"] for m in fold_metrics])
+            }
+
+        return best_threshold, best_metrics
+    
+def validate_model(normal_distances, anomaly_distances, threshold):
+    y_true = np.concatenate(
+        [np.zeros(len(normal_distances)), np.ones(len(anomaly_distances))]
+    )
+        
+    distances = np.concatenate([normal_distances, anomaly_distances])
+    y_pred = (distances > threshold).astype(int)
+
+    results = {
+        "accuracy": accuracy_score(y_true, y_pred),
+        "precision": precision_score(y_true, y_pred),
+        "recall": recall_score(y_true, y_pred),
+        "f1": f1_score(y_true, y_pred),
+        "auc": roc_auc_score(y_true, distances)
+    }
+
+    # Calculo da taxa de falsos positivos
+
+    fp = np.sum((y_true == 0) & (y_pred == 1))
+    results["false_positive_rate"] = fp/len(normal_distances)
+
+    return results
+    
+def plot_distance_distributions(normal_dist, anomaly_dist, threshold=None):
+    fig, ax = plt.subplots(figsize=(12, 6))
+    n_bins = int(np.sqrt(len(normal_dist) + len(anomaly_dist)))
+
+    ax.hist(
+        normal_dist, bins=n_bins, alpha=0.7, label="Normal", color="blue", density=True
+    )
+    ax.hist(
+        anomaly_dist, bins=n_bins, alpha=0.7, label="Anomaly", color="red", density=True
+    )
+
+    if threshold is not None:
+        ax.axvline(
+            x=threshold, color="k", linestyle="--", label=f"Limiar: {threshold:.2f}"
+        )
+
+    ax.set_xlabel("Distância de Mahalanobis")
+    ax.set_ylabel("Densidade")
+    ax.set_title("Distribuição da Distância de Mahalanobis")
+    ax.legend()
+    ax.grid(True, alpha=0.9)
+    #plt.show()
+    
+    return fig
+
+def plot_roc_curve(normal_distances, anomaly_distances, save_path=None):
+    y_true = np.concatenate(
+        [np.zeros(len(normal_distances)), np.ones(len(anomaly_distances))]
+    )
+    distances = np.concatenate([normal_distances, anomaly_distances])
+
+    fpr, tpr, _ = roc_curve(y_true, distances)
+    auc = roc_auc_score(y_true, distances)
+
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.plot(fpr, tpr, label=f"Curva ROC (AUC = {auc:.3f})")
+    ax.plot([0, 1], [0,1], "k--", label="Random")
+    ax.set_xlabel("Taxa de Falsos positivos")
+    ax.set_ylabel("Taxa de Verdadeiros positivos")
+    ax.set_title("Curva ROC")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    if save_path:
+        plt.savefig(save_path)
+        plt.close()
+        return fig
+    else:
+        return fig
+        #plt.show()
+    
+
+def plot_confusion_matrix(y_true, y_pred):
+    cm = confusion_matrix(y_true, y_pred)
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.heatmap(
+        pd.DataFrame(cm, index=["Normal", "Anomaly"], columns=["Normal", "Anomaly"]),
+                     annot=True, fmt="d", cmap="Blues",
+    )
+    
+    ax.set_title("Matriz de Confusão")
+    ax.set_xlabel("Predicted Label")
+    ax.set_ylabel("True Label")
+    #plt.show()
+
+    return fig
+
 # %%
 
+# Caminho dos arquivos
 normal_files = get_data_files(NORMAL_OPS)
 anomaly_files = get_data_files(ANOMALY_OPS)
 
-print(f"Found {len(normal_files)} normal operation files")
-print(f"Found {len(anomaly_files)} anomaly operation files")
+# Caminho para salvar a imagem
+output_path = Path("Imagens/fft_comparison.png")
 
+# Verificando se a pasta "Imagens" existe
+os.makedirs(output_path.parent, exist_ok=True)
+
+# Indicando o número de arquivos encontrados
+print(f"Amostras normais encontradas: {len(normal_files)}")
+print(f"Amostras anormais encontradas: {len(anomaly_files)}")
+
+# Gerando e salvando as comparações de plot com DC e sem DC
 plot_comparison(normal_files[0], anomaly_files[0], remove_dc=False)
 plot_comparison(normal_files[0], anomaly_files[0], remove_dc=True)
 
+# Gerando e salvando outros gráficos para análises (3D e histogramas)
 plot_3d_scatter(normal_files, anomaly_files, num_samples=10, feature_type='raw')
 plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='raw')
 plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='mean')
@@ -379,12 +550,21 @@ plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='kurt
 plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='entropy')
 plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='energy')
 
+# Gerando e mostrando histogramas
 plot_histograms(normal_files, anomaly_files)
 
+# Analisando estatísticas e imprimindo os resultados
 stat_results = analyze_statistics(normal_files[0])
 for key, value in stat_results.items():
     print(f"{key}:")
     print(value)
     print()
 
-plot_fft_comparison(normal_files, anomaly_files, save_path=None)
+# Gerando e salvando os gráficos de FFT (comparação)
+fig = plot_fft_comparison(normal_files, anomaly_files, save_path=output_path)
+plt.show()
+
+# Confirmando que a imagem foi salva
+print(f"Comparação de FFt salva em: {output_path}")
+
+## ------------- ##

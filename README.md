@@ -51,7 +51,7 @@ O projeto conta com testes automatizados utilizando pytest, garantindo a confiab
 - Testes visuais com comparação de espectros
 
 ### Exemplo: Comparação de espectros FFT (normal x anomalia)
-![Modelo da conexão dos pinos para o sistema utilizando o microcontrolador ESP32 e o acelerômetro ADXL345](Imagens\Modelo Pinos.png)
+![Comparação dos espectros FFT entre as amostrais normais e anormais](Imagens\fft_comparison.png)
 
 ### Comandos úteis
 ```

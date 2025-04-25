@@ -10,7 +10,7 @@ import pandas as pd
 from sklearn.metrics import (confusion_matrix, classification_report,
                              precision_score, recall_score, f1_score, accuracy_score,
                              roc_auc_score, roc_curve)
-from training import extract_fft_features
+from ProjetoSensor.esp32.training import extract_fft_features
 from joblib import load
 from datetime import datetime
 
@@ -145,6 +145,67 @@ def plot_3d_scatter(normal_files, anomaly_files, num_samples=3, feature_type="ra
 
     return fig
 
+def plot_fft(df, st, sampling_rate=100, eixo='x', width=3.5, height=2.5):
+    """
+    Plota o espectro de frequência (FFT) de um eixo específico.
+
+    Args:
+        df (pd.DataFrame): DataFrame com colunas ['x', 'y', 'z']
+        st (streamlit module): Módulo streamlit
+        eixo (str): Eixo a ser plotado ('x', 'y' ou 'z')
+        width (float): Largura da figura
+        height (float): Altura da figura
+    """
+    if eixo not in df.columns:
+        st.warning(f"Eixo '{eixo}' não encontrado")
+        return
+    
+    data = df[eixo].values
+    n = len(data)
+    window = np.hanning(n)
+    data_windowed = data * window
+    
+    fft = np.fft.rfft(data_windowed)
+    fft_magnitude = np.abs(fft) / n
+    fft_magnitude[1:] *= 2
+    freqs = np.fft.rfftfreq(n, d=1.0 / sampling_rate)
+
+    fig, ax = plt.subplots(figsize=(width, height))
+    ax.plot(freqs, fft_magnitude, label = f'FFT - eixo {eixo.upper()}')
+    ax.set_title(f'FFT - eixo {eixo.upper()}')
+    ax.set_xlabel('Frequência (Hz)')
+    ax.set_ylabel('Magnitude')
+    ax.grid(True)
+
+    fig.tight_layout()
+    st.pyplot(fig, use_container_width=True)
+    plt.close(fig)
+
+    '''
+
+    for axis in ["x", "y", "z"]:
+        if axis in df.columns:
+            signal = df[axis].values
+            fft_values = np.abs(np.fft.fft(signal))
+            freqs = np.fft.fftfreq(len(signal))
+
+            fig, ax = plt.subplots()
+            ax.plot(freqs[:len(freqs)//2], fft_values[:len(fft_values)//2])
+            ax.set_title(f"FFT - Eixo {axis}")
+            ax.set_xlabel("Frequência")
+            ax.set_ylabel("Magnitude")
+            st.pyplot(fig)
+
+            plt.close(fig)
+    '''
+def plot_feature_histogram(features, st):
+    for col in features.columns:
+        fig, ax = plt.subplots()
+        ax.hist(features[col], bins=20, color='skyblue', edgecolor="black")
+        ax.set_title(f"Histograma - {col}")
+        st.pyplot(fig)
+
+        plt.close(fig)
 
 def plot_histograms(normal_files, anomaly_files):
     

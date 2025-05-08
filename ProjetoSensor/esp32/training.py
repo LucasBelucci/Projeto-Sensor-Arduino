@@ -3,7 +3,6 @@
 from pathlib import Path
 import os
 import numpy as np
-import pandas as pd
 from scipy import stats
 from typing import Tuple
 from sklearn.preprocessing import StandardScaler
@@ -11,7 +10,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import (classification_report, roc_auc_score)
 from joblib import dump
 import joblib
-from sklearn.preprocessing import RobustScaler
 
 DATASET_PATH = Path("ProjetoSensor/datasets/ac")
 NORMAL_OPS = ["silent_0_baseline"]
@@ -199,23 +197,6 @@ def load_and_extract_files(file_path):
     noise = np.random.normal(0, 0.3, data.shape)
     data = data + noise
 
-    # Extraindo features por eixo
-    '''
-    features = []
-    for axis_idx in range(data.shape[1]):
-        axis_data = data[:, axis_idx]
-        features.extend(
-            [
-                np.std(axis_data),
-                scipy_stats.kurtosis(axis_data),
-                np.max(np.abs(axis_data)),
-                np.sqrt(np.mean(np.square(axis_data))),
-                np.max(axis_data) - np.min(axis_data)
-            ]
-        )
-    return np.array(features)
-    '''
-    #return extract_ml_features(data)
     return extract_fft_features(data)
 
 def create_dataset(files, max_samples=50):
@@ -226,9 +207,6 @@ def create_dataset(files, max_samples=50):
         files = np.random.choice(files, max_samples, replace=False)
 
     features = [load_and_extract_files(f) for f in files]
-    #features = preprocess_features(features)
-    #features = clip_features(features)
-    #features = np.clip(features, -10, 10)
     return np.array(features)
 
 def train_model():
@@ -248,75 +226,20 @@ def train_model():
     X_test = create_dataset(test_files)
     X_anomaly = create_dataset(anomaly_files)
 
-    #X_train_raw = np.array([extract_ml_features(np.atleast_2d(x)) for x in X_train])
-    #X_test_raw = np.array([extract_ml_features(np.atleast_2d(x)) for x in X_test])
-    #X_anomaly_raw = np.array([extract_ml_features(np.atleast_2d(x)) for x in X_anomaly])
+    X_train_raw = np.array([extract_ml_features(np.atleast_2d(x)) for x in X_train])
+    X_test_raw = np.array([extract_ml_features(np.atleast_2d(x)) for x in X_test])
+    X_anomaly_raw = np.array([extract_ml_features(np.atleast_2d(x)) for x in X_anomaly])
 
-    #features = extract_ml_features(X_train)
-    #print("FEATURES")
-    #print(features)
-    
-    #df_train_before = pd.DataFrame(X_train)
-    #df_test_before = pd.DataFrame(X_test)
-    #df_anomaly_before = pd.DataFrame(X_anomaly)
-
-    print("Shape do X_train passado para o scaler:", X_train.shape)
     # Features do Scaler
 
-    #scaler = StandardScaler()
-    scaler = RobustScaler()
-    #X_train_scaled = scaler.fit_transform(np.atleast_2d(X_train))
-    #X_test_scaled = scaler.transform(np.atleast_2d(X_test))
-    #X_anomaly_scaled = scaler.transform(np.atleast_2d(X_anomaly))
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train_raw)
+    X_test_scaled = scaler.transform(X_test_raw)
+    X_anomaly_scaled = scaler.transform(X_anomaly_raw)
     
-    
-    scaler.fit(X_train)
-    X_train_scaled = scaler.fit_transform(X_train)
-    print("Scaler center (medians):", getattr(scaler, 'center_', 'Not fitted'))
-    print("Scaler center (IQR):", getattr(scaler, 'scale_', 'Not fitted'))
-    X_test_scaled = scaler.transform(X_test)
-    X_anomaly_scaled = scaler.transform(X_anomaly)
-    print("Shape do X_train depois do scaler:", X_train_scaled.shape)
-
-    '''
-    df_train_after = pd.DataFrame(X_train_scaled)
-    df_test_after = pd.DataFrame(X_test_scaled)
-    df_anomaly_after = pd.DataFrame(X_anomaly_scaled)
-
-
-    print("Train antes do Scaler:")
-    print(df_train_before.describe())
-
-    print("Test antes do Scaler:")
-    print(df_test_before.describe())
-
-    print("Anomaly antes do Scaler:")
-    print(df_anomaly_before.describe())
-
-
-    print("Train depois do Scaler:")
-    print(df_train_after.describe())
-
-    print("Test depois do Scaler:")
-    print(df_test_after.describe())
-
-    print("Anomaly depois do Scaler:")
-    print(df_anomaly_after.describe())
-
-    comparison_train = pd.concat([df_train_before, df_train_after], axis=1, keys=["Antes", "Depois"])
-    print(comparison_train.head())
-
-    comparison_test = pd.concat([df_test_before, df_test_after], axis=1, keys=["Antes", "Depois"])
-    print(comparison_test.head())
-
-    comparison_anomaly = pd.concat([df_anomaly_before, df_anomaly_after], axis=1, keys=["Antes", "Depois"])
-    print(comparison_anomaly.head())
-    '''
-
     # Modelo de treino
 
-    mu = np.mean(X_train_scaled, axis=0).reshape(1, -1)
-    #cov = np.cov(X_train_scaled.T) + np.eye(X_train_scaled.shape[1]) * 1e-6
+    mu = np.mean(X_train_scaled, axis=0)
     cov = np.cov(X_train_scaled.T)
 
     if np.ndim(cov) == 0:
@@ -337,17 +260,10 @@ def train_model():
     # Mostrando os resultados através dos plots e dos prints
     print("\nValores usados: ")
     print(f"normal_dist:{normal_dist}\nanomaly_dist:{anomaly_dist}\n")
-    #print(f"mu: {mu}\ncov:{cov}\nscaler:{scaler}\nthreshold:{threshold}")
     print("\nResultado da Classificação:")
     print(classification_report(y_true, y_pred, target_names=["Normal", "Anomaly"]))
     print(f"AUC Score: {roc_auc_score(y_true, np.concatenate([normal_dist, anomaly_dist])):.3f}")
 
-    #plot_distance_distributions(normal_dist, anomaly_dist, threshold)
-    #plot_confusion_matrix(y_true, y_pred)
-    #plot_roc_curve(normal_dist, anomaly_dist)
-
-    #plt.show()
-    
     # Salvando o modelo de treinamento gerado
 
     os.makedirs("models", exist_ok=True)

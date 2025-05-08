@@ -16,7 +16,8 @@ MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "mahalonobis_mo
 
 st.title("Detecção de Anomalias com acelerômetro")
 
-detector = AnomalyDetector(MODEL_PATH)
+if "detector" not in st.session_state:
+    st.session_state.detector = AnomalyDetector(MODEL_PATH)
 
 uploaded_file = st.file_uploader("Envie um arquivo CSV com os dados do sensor")
 
@@ -27,7 +28,7 @@ if uploaded_file:
     data = df.to_numpy()
 
     if st.button("Detectar Anomalia"):
-        result = detector.predict(data)
+        result = st.session_state.detector.predict(data)
         st.json(result)
 
         st.metric("Anomalia", "Sim" if result["is_anomaly"] else "Não")

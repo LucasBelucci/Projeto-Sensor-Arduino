@@ -80,7 +80,24 @@ class AnomalyDetector:
             x = (distance - lower_bound) / (upper_bound - lower_bound)
             base_confidence = 0.9 / (1 + np.exp((x-0.5) * 10))
 
-        final_confidence = base_confidence
+        if len(self.recent_distances) > 5:
+            recent_mean = np.mean(self.recent_distances[-5:])
+            recent_std = np.std(self.recent_distances[-5:])
+
+            trend_stability = np.exp(-abs(distance - recent_mean) / (recent_std + 1e-6))
+
+            variation_coefficient = recent_std / (recent_mean + 1e-6)
+            variation_stability = np.exp(-variation_coefficient)
+
+            stability_factor = (trend_stability + variation_stability) / 2
+
+            history_weight = min(len(self.recent_distances) / 20, 1.0)
+            final_confidence = (
+                base_confidence * (1 - history_weight) + (base_confidence + stability_factor) / 2 * history_weight
+            )
+        else:
+            final_confidence = base_confidence
+
         return float(np.clip(final_confidence, 0.0, 1.0))
 
     def predict(self, data):

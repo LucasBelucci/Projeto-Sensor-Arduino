@@ -226,9 +226,9 @@ def create_dataset(files, max_samples=50):
         files = np.random.choice(files, max_samples, replace=False)
 
     features = [load_and_extract_files(f) for f in files]
-    features = preprocess_features(features)
+    #features = preprocess_features(features)
     #features = clip_features(features)
-    features = np.clip(features, -10, 10)
+    #features = np.clip(features, -10, 10)
     return np.array(features)
 
 def train_model():

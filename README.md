@@ -103,7 +103,7 @@ O projeto conta com testes automatizados utilizando pytest, garantindo a confiab
 pip install -r requirements.txt
 
 # Executar os testes
-pytest -v tests/
+python -m pytest -v ProjetoSensor/tests
 
 ```
 

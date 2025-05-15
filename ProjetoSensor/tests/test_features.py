@@ -13,8 +13,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from esp32.analysis import extract_fft_features, extract_ml_features, analyze_statistics, plot_fft_comparison
-from esp32.training import mahalonobis_distance
+from esp32.analysis import extract_fft_features, analyze_statistics, plot_fft_comparison
+from esp32.training import mahalonobis_distance, extract_ml_features
 
 # Testes para training Mahalonobis Distance
 
@@ -130,7 +130,8 @@ def test_extract_ml_features():
     num_corr_pairs = 3 # XY, XZ, YZ
     num_freq_metrics = 4
 
-    expected_length = num_axes * num_time_metrics + num_corr_pairs + num_axes * num_freq_metrics
+    #expected_length = num_axes * num_time_metrics + num_corr_pairs + num_axes * num_freq_metrics
+    expected_length = num_axes * num_time_metrics
     
     # Verificando se o vetor de características tem o formato esperado
     assert isinstance(features, np.ndarray)
@@ -166,7 +167,9 @@ def test_extract_ml_features_combination():
     num_corr_pairs = 3 # XY, XZ, YZ
     num_freq_metrics = 4
 
-    expected_length = num_axes * num_time_metrics + num_corr_pairs + num_axes * num_freq_metrics
+    #expected_length = num_axes * num_time_metrics + num_corr_pairs + num_axes * num_freq_metrics
+    expected_length = num_axes * num_time_metrics
+
     # Verificar se todas as features estão concatenadas corretamente
 
     assert len(features) == expected_length

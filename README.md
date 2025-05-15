@@ -95,7 +95,7 @@ O projeto conta com testes automatizados utilizando pytest, garantindo a confiab
 - Testes visuais com comparação de espectros
 
 ### Exemplo: Comparação de espectros FFT (normal x anomalia)
-![Comparação dos espectros FFT entre as amostrais normais e anormais](Imagens/fft_comparison_20250418_185547)
+![Comparação dos espectros FFT entre as amostrais normais e anormais](Imagens/fft_comparison_20250418_185547.png)
 
 ### Comandos úteis
 ```

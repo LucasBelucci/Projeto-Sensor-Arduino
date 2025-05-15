@@ -98,6 +98,17 @@ class AnomalyDetector:
         else:
             final_confidence = base_confidence
 
+        final_confidence = float(np.clip(final_confidence, 0.0, 1.0))
+
+        final_confidence = max(final_confidence, 0.7)
+
+        if not hasattr(self, 'confidence_smooth'):
+            self.confidence_smooth = final_confidence
+        else:
+            alpha = 0.3
+            self.confidence_smooth = alpha * final_confidence + (1 - alpha) * self.confidence_smooth
+            final_confidence = self.confidence_smooth
+        
         return float(np.clip(final_confidence, 0.0, 1.0))
 
     def predict(self, data):

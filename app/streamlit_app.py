@@ -30,7 +30,9 @@ if uploaded_file:
     if st.button("Detectar Anomalia"):
         result = st.session_state.detector.predict(data)
         st.json(result)
-
+        
+        st.write("Últimas distâncias calculadas:")
+        st.write(st.session_state.detector.recent_distances)
         st.metric("Anomalia", "Sim" if result["is_anomaly"] else "Não")
         st.metric("Confiança", f"{result['confidence']*100:.1f}%")
         st.metric("Distância", f"{result['distance']:.2f}")

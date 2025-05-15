@@ -36,6 +36,50 @@ Este projeto tem como objetivo a construção de um modelo capaz de captar as fr
 - Para a obtenção de algumas métricas, os dados foram selecionados, limpos e randomizados, de modo a garantir o menor overfitting, com a maior precisão.
 - Extração de métricas estatísticas e espectrais para alimentar o modelo de ML
 
+### Confiança na detecção de anomalias e suavização
+O sistema calcula uma métrica de confiança associada à detecção de anomalias, baseada principalmente na Distância de Mahalanobis em relação ao limiar definido.
+
+## Como a confiança é calculada?
+Quando a distância é muito superior ao limiar, a confiança tende a 100%, indicando alta certeza da anomalia.
+Quando a distância é próxima ao limiar, a confiança diminui, indicando incerteza.
+
+## Desafios observados
+Durante testes reais, foi identificado que a confiança apresentava oscilações abruptas entre amostras consecutivas. Essas flutuações podem causar falsas impressões de recuperação ou de agravamento repentino.
+
+## Solução aplicada: suavização exponencial
+Foi implementada uma técnica de suavização exponencial da confiança:
+
+```
+confidence_smooth = alpha * confidence_atual + (1 - alpha) * confidence_smooth_anterior
+```
+
+Onde alpha controla o grau de suavização.
+
+## Benefícios práticos observados
+- Tornou a confiança uma métrica mais confiável de tendência.
+- Reduziu alarmes falsos em situações de oscilações naturais do sistema.
+- Permitiu observar claramente a evolução progressiva de degradação quando presente.
+
+### Arquivos e módulos principais
+
+streamlit_app.py
+Responsável por fornecer uma interface visual interativa e em tempo real, onde:
+Os dados coletados do acelerômetro são processados ao vivo.
+O modelo é aplicado em tempo real.
+Exibe as principais métricas (distância, limiar, confiança).
+Mostra visualizações interativas como espectros FFT.
+Permite acompanhar ao vivo o comportamento dos sensores e o status de anomalia.
+
+utils.py
+Módulo central que organiza todas as funções reutilizáveis do projeto, incluindo:
+Extração de features estatísticas e espectrais dos dados do acelerômetro.
+Cálculo da distância de Mahalanobis.
+Função de detecção de anomalia com cálculo de confiança e suavização integrada.
+Funções de visualização gráfica (espectros FFT, distribuição das distâncias, etc).
+Carregamento do modelo e do scaler.
+Atualização dinâmica de confiança suavizada ao longo do tempo.
+Este módulo foi estruturado para permitir máxima reutilização, clareza e expansão futura.
+
 ### Principais aprendizados
 - A utilização de métricas mais eficientes, permitem que o algoritmo utilizado seja otimizado ao ponto de ser possível identificar individualmente cada componente presente no equipamento analisado
 - Técnicas de avaliação tais como distância de Mahalonobis são pouco utilizadas na grande maioria de exemplos encontrados pela internet, então ter utilizado, permitiu uma maior compreensão da sua importância e trouxe novos insights com relação a avaliação de algoritmos
@@ -78,23 +122,3 @@ Esse projeto foi derivado inicialmente do Trabalho de Conclusão de Curso desenv
 
 ### Links Úteis
 - [Linkedin](https://www.linkedin.com/in/lucas-belucci/)
-
-
-
-STREAMLIT SEM SCALER:  [[-4.98891805e-01 -3.30316020e-01  1.01527679e+01  1.86791854e-03
-   1.81592621e-03  5.15655422e-03  3.79225431e-02  2.01616370e-01
-   5.82171103e-05 -3.51086157e-01 -1.83289905e-01 -2.81485579e-01
-   3.54072030e-02  3.42763792e-02  5.83587500e-02 -4.50555375e-01
-   2.03197622e-01 -7.29786823e-02  5.42844596e-03  4.97666465e-03
-   5.57872566e-02  2.49170181e-02  1.60527191e-02  5.06353111e-01
-   6.50325817e-02  2.82456981e-02  2.59505691e+01  0.00000000e+00
-   0.00000000e+00  0.00000000e+00]]
-
-   STREAMLIT COM SCALER:  [[-1.35430708e+01 -1.03204277e+01  3.38228504e+02 -6.94840588e+00
-  -8.83601510e+00 -8.84828647e+00  7.65829447e-02  1.08802710e+00
-   3.67662280e-01 -5.91607557e-01 -2.27900120e-01 -5.72031811e-01
-  -1.04961678e+01 -1.52073981e+01 -9.92146969e+00 -4.57018069e+00
-   2.23940071e+00 -1.00543267e+00 -7.19895619e+00 -1.20316820e+01
-   1.33276385e+01  9.04526324e+00  2.90339480e+00  3.32200712e+02
-  -2.20317153e-01 -3.83430172e+00  2.01795993e+03 -1.07142857e+00
-  -9.64467005e-01 -1.16346154e+00]]

@@ -39,14 +39,14 @@ Este projeto tem como objetivo a construção de um modelo capaz de captar as fr
 ### Confiança na detecção de anomalias e suavização
 O sistema calcula uma métrica de confiança associada à detecção de anomalias, baseada principalmente na Distância de Mahalanobis em relação ao limiar definido.
 
-## Como a confiança é calculada?
+#### Como a confiança é calculada?
 Quando a distância é muito superior ao limiar, a confiança tende a 100%, indicando alta certeza da anomalia.
 Quando a distância é próxima ao limiar, a confiança diminui, indicando incerteza.
 
-## Desafios observados
+#### Desafios observados
 Durante testes reais, foi identificado que a confiança apresentava oscilações abruptas entre amostras consecutivas. Essas flutuações podem causar falsas impressões de recuperação ou de agravamento repentino.
 
-## Solução aplicada: suavização exponencial
+#### Solução aplicada: suavização exponencial
 Foi implementada uma técnica de suavização exponencial da confiança:
 
 ```
@@ -55,7 +55,7 @@ confidence_smooth = alpha * confidence_atual + (1 - alpha) * confidence_smooth_a
 
 Onde alpha controla o grau de suavização.
 
-## Benefícios práticos observados
+#### Benefícios práticos observados
 - Tornou a confiança uma métrica mais confiável de tendência.
 - Reduziu alarmes falsos em situações de oscilações naturais do sistema.
 - Permitiu observar claramente a evolução progressiva de degradação quando presente.

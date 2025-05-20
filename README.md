@@ -86,36 +86,36 @@ Onde alpha controla o grau de suavização.
 
 ### Arquivos e módulos principais
 
-streamlit_app.py
-Responsável por fornecer uma interface visual interativa e em tempo real, onde:
-Os dados coletados do acelerômetro são processados ao vivo.
-O modelo é aplicado em tempo real.
-Exibe as principais métricas (distância, limiar, confiança).
-Mostra visualizações interativas como espectros FFT.
-Permite acompanhar ao vivo o comportamento dos sensores e o status de anomalia.
+streamlit_app.py: 
+- Responsável por fornecer uma interface visual interativa e em tempo real, onde:
+- Os dados coletados do acelerômetro são processados ao vivo.
+- O modelo é aplicado em tempo real.
+- Exibe as principais métricas (distância, limiar, confiança).
+- Mostra visualizações interativas como espectros FFT.
+- Permite acompanhar ao vivo o comportamento dos sensores e o status de anomalia.
 
-utils.py
-Módulo central que organiza todas as funções reutilizáveis do projeto, incluindo:
-Extração de features estatísticas e espectrais dos dados do acelerômetro.
-Cálculo da distância de Mahalanobis.
-Função de detecção de anomalia com cálculo de confiança e suavização integrada.
-Funções de visualização gráfica (espectros FFT, distribuição das distâncias, etc).
-Carregamento do modelo e do scaler.
-Atualização dinâmica de confiança suavizada ao longo do tempo.
-Este módulo foi estruturado para permitir máxima reutilização, clareza e expansão futura.
+utils.py:
+- Módulo central que organiza todas as funções reutilizáveis do projeto, incluindo:
+- Extração de features estatísticas e espectrais dos dados do acelerômetro.
+- Cálculo da distância de Mahalanobis.
+- Função de detecção de anomalia com cálculo de confiança e suavização integrada.
+- Funções de visualização gráfica (espectros FFT, distribuição das distâncias, etc).
+- Carregamento do modelo e do scaler.
+- Atualização dinâmica de confiança suavizada ao longo do tempo.
+- Este módulo foi estruturado para permitir máxima reutilização, clareza e expansão futura.
 
-training.py
-Responsável pela realização do treinamento e criação do modelo utilizado para análise posterior, além da determinação de critérios essenciais como o limiar da distância de Mahalonobis, fundamental para classificação na presença de anomalia.
+training.py:
+- Responsável pela realização do treinamento e criação do modelo utilizado para análise posterior, além da determinação de critérios essenciais como o limiar da distância de Mahalonobis, fundamental para classificação na presença de anomalia.
 
-analysis.py
-Módulo principal para organização das funções utilizadas para obtenção das métricas estatísticas, gráficos gerados, comparações de resultados, amplamente aplicado durante o training.
+analysis.py:
+- Módulo principal para organização das funções utilizadas para obtenção das métricas estatísticas, gráficos gerados, comparações de resultados, amplamente aplicado durante o training.
 
-test_features.py
-Algoritmo responsável pela realização dos testes automatizados das funções presentes majoritariamente em analysis.
+test_features.py:
+- Algoritmo responsável pela realização dos testes automatizados das funções presentes majoritariamente em analysis.
 
 server.py
-Dois arquivos diferentes, porém com o mesmo nome, o primeiro é utilizado para criação do server HTTPS que irá receber e agrupar as informações durante a coleta dos dados realizadas pelo sensor ADXL345 e passadas ao ESP32.
-O segundo é responsável pela criação do servidor que irá hospedar o streamlit, e portanto, possuir o método POST que recebe o arquivo CSV com os dados coletados, aplica o algoritmo treinado e retorna o resultado da distância de Mahalanobis.
+- Dois arquivos diferentes, porém com o mesmo nome, o primeiro é utilizado para criação do server HTTPS que irá receber e agrupar as informações durante a coleta dos dados realizadas pelo sensor ADXL345 e passadas ao ESP32.
+- O segundo é responsável pela criação do servidor que irá hospedar o streamlit, e portanto, possuir o método POST que recebe o arquivo CSV com os dados coletados, aplica o algoritmo treinado e retorna o resultado da distância de Mahalanobis.
 
 ### Principais aprendizados
 - A utilização de métricas mais eficientes, permitem que o algoritmo utilizado seja otimizado ao ponto de ser possível identificar individualmente cada componente presente no equipamento analisado.

@@ -130,6 +130,9 @@ def test_extract_ml_features():
     num_corr_pairs = 3 # XY, XZ, YZ
     num_freq_metrics = 4
 
+    # A versão atual do meu código de extract_ml_features está extraindo apenas as métricas do domínio do tempo, não considerando as
+    # partes de correlação e frequência, portanto, diminuiu o número de features que são retornadas de 30 para 15
+
     #expected_length = num_axes * num_time_metrics + num_corr_pairs + num_axes * num_freq_metrics
     expected_length = num_axes * num_time_metrics
     
@@ -166,6 +169,10 @@ def test_extract_ml_features_combination():
     num_time_metrics = 5
     num_corr_pairs = 3 # XY, XZ, YZ
     num_freq_metrics = 4
+
+    # A versão atual do meu código de extract_ml_features está extraindo apenas as métricas do domínio do tempo, não considerando as
+    # partes de correlação e frequência, portanto, diminuiu o número de features que são retornadas de 30 para 15
+
 
     #expected_length = num_axes * num_time_metrics + num_corr_pairs + num_axes * num_freq_metrics
     expected_length = num_axes * num_time_metrics

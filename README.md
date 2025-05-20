@@ -19,10 +19,10 @@ Este projeto tem como objetivo a construção de um modelo capaz de captar as fr
 | CS               | 3.3V           | Seleção de modo de comunicação      | Mantido em nível alto (3.3V) para ativar o modo I2C e desabilitar o modo SPI     |
 
 ### Esquema de montagem do sistema
-![Modelo da conexão dos pinos para o sistema utilizando o microcontrolador ESP32 e o acelerômetro ADXL345](Imagens/Wiring_scheming.png)
+![Modelo da conexão dos pinos para o sistema utilizando o microcontrolador ESP32 e o acelerômetro ADXL345](Imagens/wiring_scheming.png)
 
 ### Sistema montado
-![Versão de testes do sistema montado utilizando o microcontrolador ESP32 e o acelerômetro ADXL345](Imagens/Real_circuit.png)
+![Versão de testes do sistema montado utilizando o microcontrolador ESP32 e o acelerômetro ADXL345](Imagens/real_circuit.png)
 
 ### Recursos e Funcionalidades
 - Captação da frequência de vibração de funcionamento de equipamentos monitorados

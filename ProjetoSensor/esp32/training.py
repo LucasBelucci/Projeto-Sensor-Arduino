@@ -45,14 +45,13 @@ def mahalonobis_distance(x, mu, cov):
         cov = np.array([[cov]])
 
     inv_convmat = np.linalg.inv(cov + 1e-6 * np.eye(cov.shape[0]))
-    #print(f"Valores\n")
-    #print(f"x_mu: {x_mu.shape}\nmu: {mu.shape}\ninv_covmat:{inv_convmat}\n")
     return np.sqrt(np.sum(np.dot(x_mu, inv_convmat) * x_mu, axis=1))
 
 # Para extração de algumas características importantes, é realizado a aplicação da janela de Hann, minimizando os efeitos de descontinuidade nas extremidades
 # dos sinais, sabendo que estamos utilizando sinais reais, a FFT será simétrica, e portanto, apenas a primeira metade dos valores contém informações úteis
 # Aplicando então a janela nos dados antes de realizar a FFT, calculando apenas a parte positiva, extraindo a magnitude e ignorando as fases, 
 # será obtido uma matriz com as frequências extraídas de cada eixo após ignorar a simetria
+
 def extract_fft_features(
         sample: np.ndarray,
         include_dc: bool = False,
@@ -133,7 +132,7 @@ def preprocess_features(features: np.ndarray) -> np.ndarray:
 
     processed = features.copy()
 
-    #log1p em features de energia e frequência dominante
+    # log1p em features de energia e frequência dominante
     # baseado na estrutura do extract_ml_features: energia = [-6: -3], freq_dom = [-3;]
     energy = [-6, -5, -4]
     freq = [-3, -2, -1]

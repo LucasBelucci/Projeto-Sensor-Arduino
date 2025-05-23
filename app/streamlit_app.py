@@ -5,7 +5,6 @@ from utils import AnomalyDetector
 
 # Baseline
 DATA_PATH = Path("ProjetoSensor/datasets/ac/latest_data/baseline_latest_data.csv")
-#DATA_PATH = Path("ProjetoSensor/datasets/ac/latest_data/baseline_silent_1_latest_data.csv")
 
 # Anomaly
 #DATA_PATH = Path("ProjetoSensor/datasets/ac/latest_data/anomaly_latest_data.csv")

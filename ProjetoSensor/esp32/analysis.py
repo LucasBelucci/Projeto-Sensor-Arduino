@@ -33,7 +33,6 @@ def get_data_files(operations):
 def load_samples(file_path, remove_dc = False):
     try:
         data = np.genfromtxt(file_path, delimiter=",")
-        #print(f"{file_path}: shape{data.shape}")
         if remove_dc:
             data = data - np.mean(data, axis=0)
         return data
@@ -181,23 +180,6 @@ def plot_fft(df, st, sampling_rate=100, eixo='x', width=3.5, height=2.5):
     st.pyplot(fig, use_container_width=True)
     plt.close(fig)
 
-    '''
-
-    for axis in ["x", "y", "z"]:
-        if axis in df.columns:
-            signal = df[axis].values
-            fft_values = np.abs(np.fft.fft(signal))
-            freqs = np.fft.fftfreq(len(signal))
-
-            fig, ax = plt.subplots()
-            ax.plot(freqs[:len(freqs)//2], fft_values[:len(fft_values)//2])
-            ax.set_title(f"FFT - Eixo {axis}")
-            ax.set_xlabel("Frequência")
-            ax.set_ylabel("Magnitude")
-            st.pyplot(fig)
-
-            plt.close(fig)
-    '''
 def plot_feature_histogram(features, st):
     for col in features.columns:
         fig, ax = plt.subplots()
@@ -208,15 +190,8 @@ def plot_feature_histogram(features, st):
         plt.close(fig)
 
 def plot_histograms(normal_files, anomaly_files):
-    
-    #for f in normal_files:
-    #    print(f"Verificando arquivo: {f}")
-    #    print(f"Existe? {Path(f).exists()}")
-
     plt.figure(figsize=(12, 6))
 
-    #normal_valid = [s for s in normal_files if isinstance(s, np.ndarray) and s.ndim == 2 and s.shape[1] >= 3]
-    #anomaly_valid = [s for s in anomaly_files if isinstance(s, np.ndarray) and s.ndim == 2 and s.shape[1] >= 3]
     normal_valid = []
     anomaly_valid = []
     for f in normal_files:
@@ -238,7 +213,6 @@ def plot_histograms(normal_files, anomaly_files):
     
     num_features = normal_valid[0].shape[1]
     axis_labels = ["X-axis", "Y-axis", "Z-axis"]
-    #num_features = len(axis_labels)
     
     for i in range(num_features):
         plt.subplot(2, 3, i+1)
@@ -330,11 +304,6 @@ def plot_fft_comparison(normal_files, anomaly_files, num_samples=200, start_bin=
         except Exception as e:
             print(f"[ERRO] Não foi possível salvar a imagem: {e}")
 
-    #if save_path is not None:    
-    #   fig.savefig(str(save_path), dpi=300, bbox_inches = "tight")
-    #   print(f"[INFO] FFT comparison salva em: {save_path}")
-       
-    #plt.show()
     return fig
 
 # --------------- ##
@@ -441,8 +410,7 @@ def plot_distance_distributions(normal_dist, anomaly_dist, threshold=None):
     ax.set_title("Distribuição da Distância de Mahalanobis")
     ax.legend()
     ax.grid(True, alpha=0.9)
-    #plt.show()
-    
+
     return fig
 
 def plot_roc_curve(normal_distances, anomaly_distances, save_path=None):
@@ -469,8 +437,6 @@ def plot_roc_curve(normal_distances, anomaly_distances, save_path=None):
         return fig
     else:
         return fig
-        #plt.show()
-    
 
 def plot_confusion_matrix(y_true, y_pred):
     cm = confusion_matrix(y_true, y_pred)
@@ -483,7 +449,6 @@ def plot_confusion_matrix(y_true, y_pred):
     ax.set_title("Matriz de Confusão")
     ax.set_xlabel("Predicted Label")
     ax.set_ylabel("True Label")
-    #plt.show()
 
     return fig
 

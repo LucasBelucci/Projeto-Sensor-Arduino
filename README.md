@@ -2,7 +2,7 @@
 Sistema de monitoramento inteligente de vibração com ESP32 + ADXL345, que aplica análise estatística e espectral (FFT) para detectar anomalias em tempo real.
 
 ## Objetivo
-Este projeto tem como objetivo construir um modelo capaz de captar as frequências de vibração de um equipamento, enviar essas informações via Wi-Fi para um servidor HTTPS, e utilizar uma API em Python para análise em tempo real. A detecção de anomalias é realizada por um algoritmo treinado com dados de funcionamento normal e anômalo, utilizando técnicas como a Distância de Mahalanobis e Análise de Fourier (FFT).
+Este projeto tem como objetivo construir um modelo capaz de captar as frequências de vibração de um equipamento, enviar essas informações via Wi-Fi para um servidor HTTPS, e utilizar uma API em Python para análise em tempo real. A detecção de anomalias é realizada por um algoritmo treinado com dados de funcionamento normal e anômalo forçado, utilizando técnicas como a Distância de Mahalanobis e Análise de Fourier (FFT).
 
 ## Hardware utilizado
 - ESP32
@@ -13,9 +13,9 @@ Este projeto tem como objetivo construir um modelo capaz de captar as frequênci
 |------------------|----------------|--------------------------------------|-----------------------------------------------------------------------------------|
 | VCC              | 3.3V           | Alimentação                         | Fornece tensão de 3.3V para o funcionamento do sensor ADXL345                    |
 | GND              | GND            | Terra comum                         | Estabelece referência de zero volts (terra) compartilhada entre os dispositivos  |
-| SDA              | GPIO 21        | Dados I2C (Serial Data)             | Linha de dados para comunicação I2C; envia e recebe informações do sensor        |
+| SDA              | GPIO 21        | Dados I2C (Serial Data)             | Linha de dados para comunicação I2C, envia e recebe informações do sensor        |
 | SCL              | GPIO 22        | Clock I2C (Serial Clock)            | Linha de clock que sincroniza a comunicação I2C entre ESP32 e sensor             |
-| SDO              | GND            | Seleção de endereço I2C           | Quando ligado ao GND, define o endereço I2C como 0x53 (alternativa: 0x1D com VCC)|
+| SDO              | GND            | Seleção de endereço I2C           | Quando ligado ao GND, define o endereço I2C|
 | CS               | 3.3V           | Seleção de modo de comunicação      | Mantido em nível alto (3.3V) para ativar o modo I2C e desabilitar o modo SPI     |
 
 ## Esquema de montagem do sistema
@@ -28,17 +28,21 @@ Este projeto tem como objetivo construir um modelo capaz de captar as frequênci
 ### Aquisição e Transmissão
 - Captação da frequência de vibração de funcionamento de equipamentos monitorados
 - Envio das informações via WiFi para um servidor HTTPS local
+- Agrupamento e geração de arquivos em acordo com o número de amostras
+
+### Processamento e Detecção
 - Extração de múltiplas métricas estatísticas e espectrais dos dados do acelerômetro, incluindo:
     - Estatísticas no domínio do tempo (média, desvio padrão, RMS, amplitude, curtose)
     - Correlação entre os eixos (X, Y, Z)
-
-### Processamento e Detecção
-- Análise de frequência via FFT (picos espectrais, energia média, quantidade de harmônicos)
 - Transformada de Fourier (FFT) e Distância de Mahalanobis para detecção de anomalias
+- Análise de frequência via FFT (picos espectrais, energia média, quantidade de harmônicos)
 - Utilização das features estatísticas e espectrais para treinamento algoritmos de aprendizado de máquina.
-- Comparação visual de espectros FFT entre estados normais e anômalos
 - Determinação da distância de Mahalanobis como critério para indicativo de anomalia
+
+### Avaliação
+- Comparação visual de espectros FFT entre estados normais e anômalos
 - Criação de testes automatizados para testar todas as funções utilizadas durante o treinamento, tanto para a obtenção das estatísticas quanto para a plotagem dos gráficos.
+- Levantamento das métricas envolvendo o modelo resultante, tais como acurácia, precisão, recall, f1 e curva ROC
 
 ## Tecnologias utilizadas
 - Arduino IDE
@@ -51,16 +55,16 @@ Este projeto tem como objetivo construir um modelo capaz de captar as frequênci
 
 ## Coleta dos dados
 ### ESP32
-Lógica criada através da interface do ArduinoIDE, faz uma checagem inicial dos componentes, posteriormente uma verificação de conexão com o servidor HTTPS e finalmente habilita um timer para a realização de maneira periódica a coleta dos dados fornecidos pelo sensor ADXL345 e envio para um servidor HTTPS.
+Lógica criada através da interface do ArduinoIDE, faz uma checagem inicial dos componentes, posteriormente uma verificação de conexão com o servidor e finalmente habilita um timer para a realização da coleta dos dados fornecidos pelo sensor ADXL345 e envio para um servidor HTTPS de maneira periódica.
 
 ### Servidor
-Servidor simples feito em python com apenas o método POST para receber e posteriormente agrupar as primeiras 200 coletas realizadas pelo sensor ADXL345.
+Servidor feito em python com apenas o método de inicialização e o POST definidos.
 
 ### Criação dos dados
-Os arquivos recebidos oriundos do ESP32 são agrupados e salvos em arquivos CSV no diretório característico.
+As 200 amostras oriundos do ESP32 são recebidos, agrupados e salvos em arquivos CSV no diretório característico.
 
 ## Tratamento de dados
-- Os dados coletados inicialmente foram apenas de vibração, portanto, o único tratamento necessário foi o de separação dos valores de acordo com os eixos captados (X, Y, Z)
+- Os dados coletados inicialmente foram apenas de vibração, portanto, os tratamentos necessários foram remover a componente DC e a separação dos valores de acordo com os eixos captados (X, Y, Z)
 - Para a obtenção de algumas métricas, os dados foram selecionados, limpos e randomizados, de modo a garantir o menor overfitting, com a maior precisão.
 - Extração de métricas estatísticas e espectrais para alimentar o modelo de ML
 
@@ -69,6 +73,26 @@ O sistema calcula uma métrica de confiança associada à detecção de anomalia
 
 #### Como a confiança é calculada?
 Quando a distância é muito superior ao limiar, a confiança tende a 100%, indicando alta certeza da anomalia, quando a distância é próxima ao limiar, a confiança diminui, indicando incerteza.
+
+### Dashboard
+Com o objetivo de tornar o resultado mais visual, foi criado um dashboard simplificado utilizando streamlit, nele é possível fazer a inserção do CSV com os dados, que são processados e armazenados em um histórico, enquanto o app está rodando, esse histórico é utilizado para o cálculo da confiança.
+
+Retornando assim, a confiança, distância de mahalanobis, threshold, valores dos features relativos ao ultimo conjunto de dados inseridos e se foi identificado como uma anomalia ou não.
+
+Idealmente essa inserção é substituida por uma coleta em tempo real com atualização do status do sistema.
+
+
+#### Cabeçalho do streamlit antes da inserção dos dados
+
+![Cabeçalho do streamlit antes da inserção dos dados](Imagens/Streamlit_parte1.png)
+
+#### Visualização após inserção dos dados da primeira amostra
+
+![Visualização após inserção dos dados da primeira amostra](Imagens/Streamlit_parte2.png)
+
+#### Visualização dos dados após inserção de várias amostras
+
+![Visualização dos dados após inserção de várias amostras](Imagens/Streamlit_parte3.png)
 
 #### Desafios observados
 Durante testes, foi identificado que a confiança apresentava oscilações abruptas entre amostras, como resultado de uma inserção não contínua, uma vez que, caso os dados estivessem sendo observados em intervalos constantes a falha iria progredir de modo gradual e não sofrer alterações abruptas, pensando em solucionar essas flutuações, que em cenários de falhas podem causar falsas impressões de recuperação ou de agravamento repentino, foi implementada uma suavização exponencial.
@@ -150,6 +174,8 @@ pip install -r requirements.txt
 # Executar os testes
 python -m pytest -v ProjetoSensor/tests
 
+# Executar o streamlit app
+python -m streamlit run app/streamlit_app.py
 ```
 
 ## Upgrades e melhorias

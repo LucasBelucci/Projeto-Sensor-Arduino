@@ -10,7 +10,7 @@ import pandas as pd
 from sklearn.metrics import (confusion_matrix, classification_report,
                              precision_score, recall_score, f1_score, accuracy_score,
                              roc_auc_score, roc_curve)
-from ProjetoSensor.esp32.training import extract_fft_features
+from training import extract_fft_features
 from joblib import load
 from datetime import datetime
 
@@ -39,9 +39,36 @@ def load_samples(file_path, remove_dc = False):
     except Exception as e:
         print(f"Erro ao carregar {file_path}: {e}")
         return None
+    
+def gerar_nome_arquivo(tipo, sufixo = "", extensao = "png", timestamp = None):
+    if timestamp is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    nome = f"{tipo}_{sufixo}_{timestamp}" if sufixo else f"{tipo}_{timestamp}"
+    return Path("Imagens/graficos") / f"{nome}.{extensao}"
+
+def salvar_figura(save_path):
+        save_path = Path(save_path)
+
+        try:
+            # Garante que a pasta existe
+            Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+
+            # Tenta salvar a figura
+            plt.savefig(str(save_path), dpi=300, bbox_inches = "tight")
+
+            # Verifica se o arquivo foi salvo
+            if Path(save_path).exists():
+                print(f"[SUCESSO] Imagem salva em: {save_path.resolve()}")
+            else:
+                print(f"[ERRO] fig.savefig() executou mas o arquivo nao apareceu!")
+        
+        except Exception as e:
+            print(f"[ERRO] Não foi possível salvar a imagem: {e}")
+        finally:
+            plt.close()
 
 # Funções responsáveis pelos gráficos comparativos que serão gerados entre as informações normais e as anomalias, através de gráficos de linha, dispersão em 3D
-def plot_comparison(normal_file, anomaly_file, remove_dc=False):
+def plot_comparison(normal_file, anomaly_file, remove_dc=False, save_path=None):
     normal_data = load_samples(normal_file, remove_dc)
     anomaly_data = load_samples(anomaly_file, remove_dc)
 
@@ -67,9 +94,11 @@ def plot_comparison(normal_file, anomaly_file, remove_dc=False):
     ax2.grid(True, alpha=0.3)
 
     plt.tight_layout()
+    if save_path:
+        salvar_figura(save_path)
     return fig
 
-def plot_3d_scatter(normal_files, anomaly_files, num_samples=3, feature_type="raw"):
+def plot_3d_scatter(normal_files, anomaly_files, num_samples=3, feature_type="raw", save_path=None):
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111, projection="3d")
 
@@ -140,7 +169,10 @@ def plot_3d_scatter(normal_files, anomaly_files, num_samples=3, feature_type="ra
     ax.set_xlabel("X-axis")
     ax.set_ylabel("Y-axis")
     ax.set_zlabel("Z-axis")
-    ax.set_title(f"3D Visualização de {feature_type.capitalize()} Data")
+    ax.set_title(f"3D Visualização de {feature_type} Data")
+
+    if save_path:
+        salvar_figura(save_path)
 
     return fig
 
@@ -189,7 +221,7 @@ def plot_feature_histogram(features, st):
 
         plt.close(fig)
 
-def plot_histograms(normal_files, anomaly_files):
+def plot_histograms(normal_files, anomaly_files, save_path=None):
     plt.figure(figsize=(12, 6))
 
     normal_valid = []
@@ -205,8 +237,8 @@ def plot_histograms(normal_files, anomaly_files):
         if sample is not None:
             anomaly_valid.append(sample)
 
-    print(f'Amostras normais válidas: {len(normal_valid)}')
-    print(f'Amostras anormais válidas: {len(anomaly_valid)}')
+    #print(f'Amostras normais válidas: {len(normal_valid)}')
+    #print(f'Amostras anormais válidas: {len(anomaly_valid)}')
 
     if not normal_valid or not anomaly_valid:
         raise ValueError("Não há amostras válidas para plotar")
@@ -229,7 +261,10 @@ def plot_histograms(normal_files, anomaly_files):
         plt.title(axis_labels[i])
     
     plt.tight_layout()
-    if matplotlib.get_backend().lower() != 'agg':
+
+    if save_path is not None:
+        salvar_figura(save_path)
+    else:
         plt.show()
 
 # Definição das estatísticas básicas que serão utilizadas como critérios de avaliação de desempenho dos algoritmos de aprendizado, são elas Média, variância, Kurtosis, Skew, MAD e correlação
@@ -238,7 +273,7 @@ def analyze_statistics(sample_file):
     sample = load_samples(sample_file, remove_dc=True)
 
     stats_dict = {
-        "Sample shape": sample.shape, # Retorna as dimensões do conjunto de dados
+        #"Sample shape": sample.shape, # Retorna as dimensões do conjunto de dados
         "Mean": np.mean(sample, axis=0), # retorna a média de cada eixo, para o caso, o valor médio da aceleração nos eixos
         "Variance": np.var(sample, axis=0), # Mede a dispersão dos dados em torno da média
         "Kurtosis": stats.kurtosis(sample), # Indica o achatamento da distribuição de dados
@@ -285,25 +320,9 @@ def plot_fft_comparison(normal_files, anomaly_files, num_samples=200, start_bin=
         ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    
 
     if save_path is not None:
-        try:
-            # Garante que a pasta existe
-            Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-
-            # Tenta salvar a figura
-            fig.savefig(str(save_path), dpi=300, bbox_inches = "tight")
-
-            # Verifica se o arquivo foi salvo
-            if Path(save_path).exists():
-                print(f"[SUCESSO] Imagem salva em: {save_path.resolve()}")
-            else:
-                print(f"[ERRO] fig.savefig() executou mas o arquivo nao apareceu!")
-        
-        except Exception as e:
-            print(f"[ERRO] Não foi possível salvar a imagem: {e}")
-
+        salvar_figura(save_path)
     return fig
 
 # --------------- ##
@@ -389,7 +408,7 @@ def validate_model(normal_distances, anomaly_distances, threshold):
 
     return results
     
-def plot_distance_distributions(normal_dist, anomaly_dist, threshold=None):
+def plot_distance_distributions(normal_dist, anomaly_dist, threshold=None, save_path=None):
     fig, ax = plt.subplots(figsize=(12, 6))
     n_bins = int(np.sqrt(len(normal_dist) + len(anomaly_dist)))
 
@@ -410,6 +429,9 @@ def plot_distance_distributions(normal_dist, anomaly_dist, threshold=None):
     ax.set_title("Distribuição da Distância de Mahalanobis")
     ax.legend()
     ax.grid(True, alpha=0.9)
+
+    if save_path:
+        salvar_figura(save_path)
 
     return fig
 
@@ -432,13 +454,10 @@ def plot_roc_curve(normal_distances, anomaly_distances, save_path=None):
     ax.grid(True, alpha=0.3)
 
     if save_path:
-        plt.savefig(save_path)
-        plt.close()
-        return fig
-    else:
-        return fig
+        salvar_figura(save_path)
+    return fig
 
-def plot_confusion_matrix(y_true, y_pred):
+def plot_confusion_matrix(y_true, y_pred, save_path=None):
     cm = confusion_matrix(y_true, y_pred)
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.heatmap(
@@ -450,6 +469,8 @@ def plot_confusion_matrix(y_true, y_pred):
     ax.set_xlabel("Predicted Label")
     ax.set_ylabel("True Label")
 
+    if save_path:
+        salvar_figura(save_path)
     return fig
 
 def load_distributions():
@@ -470,53 +491,64 @@ def main():
 
     normal_dist, anomaly_dist, threshold, y_true, y_pred = load_distributions()
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # Caminho para salvar a imagem
-    output_path = Path(f"Imagens/fft_comparison_{timestamp}.png")
+    #output_path = Path(f"Imagens/fft_comparison_{timestamp}.png")
 
     # Verificando se a pasta "Imagens" existe
-    os.makedirs(output_path.parent, exist_ok=True)
+    #os.makedirs(output_path.parent, exist_ok=True)
 
     # Indicando o número de arquivos encontrados
     print(f"Amostras normais encontradas: {len(normal_files)}")
     print(f"Amostras anormais encontradas: {len(anomaly_files)}")
 
+    Path("Imagens").mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
     # Gerando e salvando as comparações de plot com DC e sem DC
-    plot_comparison(normal_files[0], anomaly_files[0], remove_dc=False)
-    plot_comparison(normal_files[0], anomaly_files[0], remove_dc=True)
+    for remove_dc in [False, True]:
+        sufixo = "sem_dc" if remove_dc else "com_dc"
+        output_path = gerar_nome_arquivo("comparison", sufixo = sufixo, timestamp = timestamp)
+        plot_comparison(normal_files[0], anomaly_files[0], remove_dc= remove_dc, save_path=output_path)
 
     # Gerando e salvando outros gráficos para análises (3D e histogramas)
-    plot_3d_scatter(normal_files, anomaly_files, num_samples=10, feature_type='raw')
-    plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='raw')
-    plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='mean')
-    plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='variance')
-    plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='kurtosis')
-    plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='entropy')
-    plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type='energy')
+    output_path = gerar_nome_arquivo('raw_10', timestamp=timestamp)
+    plot_3d_scatter(normal_files, anomaly_files, num_samples=10, feature_type='raw', save_path=output_path)
 
+    feature_type = ['raw', 'mean', 'variance', 'kurtosis', 'entropy', 'energy']
+    for feature in feature_type:
+        output_path = gerar_nome_arquivo(feature, timestamp=timestamp)
+        plot_3d_scatter(normal_files, anomaly_files, num_samples=200, feature_type=feature, save_path=output_path)
+    
     # Gerando e mostrando histogramas
-    plot_histograms(normal_files, anomaly_files)
+    output_path = gerar_nome_arquivo("histogram", timestamp=timestamp)
+    plot_histograms(normal_files, anomaly_files, save_path=output_path)
 
-    # Analisando estatísticas e imprimindo os resultados
+    # Gerando e salvando os gráficos de FFT (comparação)
+    output_path= gerar_nome_arquivo("fft_comparison", timestamp=timestamp)
+    plot_fft_comparison(normal_files, anomaly_files, save_path=output_path)
+
+    output_path = gerar_nome_arquivo("distance_distributions", timestamp)
+    plot_distance_distributions(normal_dist, anomaly_dist, threshold, save_path=output_path)
+    
+    output_path = gerar_nome_arquivo("confusion_matrix", timestamp)
+    plot_confusion_matrix(y_true, y_pred, save_path=output_path)
+
+    output_path = gerar_nome_arquivo("roc_curve", timestamp)
+    plot_roc_curve(normal_dist, anomaly_dist, save_path=output_path)
+    
+    plt.show()
+
+        # Analisando estatísticas e imprimindo os resultados
     stat_results = analyze_statistics(normal_files[0])
     for key, value in stat_results.items():
         print(f"{key}:")
         print(value)
         print()
 
-    # Gerando e salvando os gráficos de FFT (comparação)
-    plot_fft_comparison(normal_files, anomaly_files, save_path=output_path)
-
-
-    plot_distance_distributions(normal_dist, anomaly_dist, threshold)
-    plot_confusion_matrix(y_true, y_pred)
-    plot_roc_curve(normal_dist, anomaly_dist)
-    
-    plt.show()
-
     # Confirmando que a imagem foi salva
-    print(f"Comparação de FFt salva em: {output_path.resolve()}")
+    #print(f"Comparação de FFT salva em: {output_path.resolve()}")
 
 ## ------------ ##
 

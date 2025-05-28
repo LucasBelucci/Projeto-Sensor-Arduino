@@ -117,36 +117,6 @@ def extract_fft_features(
     else:
         return out_sample
 
-def preprocess_features(features: np.ndarray) -> np.ndarray:
-    """
-    Aplica pré-processamento específico nas features:
-    - log1p para features com alta amplitude
-    - substituição de outliers (winsorization)
-
-    Args:
-        features (np.ndarray): vetor 1D com features extraídas
-
-    Returns:
-        np.ndarray: vetor pré-processado
-    """
-
-    processed = features.copy()
-
-    # log1p em features de energia e frequência dominante
-    # baseado na estrutura do extract_ml_features: energia = [-6: -3], freq_dom = [-3;]
-    energy = [-6, -5, -4]
-    freq = [-3, -2, -1]
-
-    for i in energy + freq:
-        val = processed[i]
-        processed[i] = np.where(val > 0, np.log1p(val), 0.0)
-
-    return processed
-
-def clip_features(features_scaled, clip_range=(-10, 10)):
-    return np.clip(features_scaled, clip_range[0], clip_range[1])
-
-
 # Extração das estatísticas para utilização em ML
 def extract_ml_features(sample: np.ndarray) -> np.ndarray:
     """
@@ -172,17 +142,17 @@ def extract_ml_features(sample: np.ndarray) -> np.ndarray:
     features.append(np.mean(np.abs(sample - np.mean(sample, axis=0)), axis=0))
 
     # Correlação entre eixos
-    #corr_matrix = np.corrcoef(sample.T) # shape: (n_axes, n_axes)
-    #tril_indices = np.tril_indices_from(corr_matrix, k=-1)
-    #features.append(corr_matrix[tril_indices])  # shape: (n_combinations, )
+    corr_matrix = np.corrcoef(sample.T) # shape: (n_axes, n_axes)
+    tril_indices = np.tril_indices_from(corr_matrix, k=-1)
+    features.append(corr_matrix[tril_indices])  # shape: (n_combinations, )
 
     # Domínio da frequência
-    #fft = extract_fft_features(sample, include_dc=False)    # shape: (n_freqs, n_axes)
+    fft = extract_fft_features(sample, include_dc=False)    # shape: (n_freqs, n_axes)
 
-    #features.append(np.mean(fft, axis=0))   # Média das magnitudes FFT
-    #features.append(np.std(fft, axis=0))    # Desvio padrão das FFT
-    #features.append(np.sum(fft**2, axis=0)) # Energia
-    #features.append(np.argmax(fft, axis=0)) # Freq. Dominante (índice de máxima magnitude)
+    features.append(np.mean(fft, axis=0))   # Média das magnitudes FFT
+    features.append(np.std(fft, axis=0))    # Desvio padrão das FFT
+    features.append(np.sum(fft**2, axis=0)) # Energia
+    features.append(np.argmax(fft, axis=0)) # Freq. Dominante (índice de máxima magnitude)
 
     # Concatena tudo em um vetor 1D
     return np.concatenate(features)
@@ -258,7 +228,10 @@ def train_model():
 
     # Mostrando os resultados através dos plots e dos prints
     print("\nValores usados: ")
-    print(f"normal_dist:{normal_dist}\nanomaly_dist:{anomaly_dist}\n")
+    print(f"\n{X_train_scaled}")
+    print(f"\n{X_test_scaled}")
+    print(f"\n{X_anomaly_scaled}")
+    #print(f"normal_dist:{normal_dist}\nanomaly_dist:{anomaly_dist}\n")
     print("\nResultado da Classificação:")
     print(classification_report(y_true, y_pred, target_names=["Normal", "Anomaly"]))
     print(f"AUC Score: {roc_auc_score(y_true, np.concatenate([normal_dist, anomaly_dist])):.3f}")

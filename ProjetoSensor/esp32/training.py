@@ -227,10 +227,10 @@ def train_model():
     y_pred = np.concatenate([normal_dist > threshold, anomaly_dist > threshold]).astype(int)
 
     # Mostrando os resultados através dos plots e dos prints
-    print("\nValores usados: ")
-    print(f"\n{X_train_scaled}")
-    print(f"\n{X_test_scaled}")
-    print(f"\n{X_anomaly_scaled}")
+    #print("\nValores usados: ")
+    #print(f"\n{X_train_scaled}")
+    #print(f"\n{X_test_scaled}")
+    #print(f"\n{X_anomaly_scaled}")
     #print(f"normal_dist:{normal_dist}\nanomaly_dist:{anomaly_dist}\n")
     print("\nResultado da Classificação:")
     print(classification_report(y_true, y_pred, target_names=["Normal", "Anomaly"]))

@@ -13,8 +13,9 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from esp32.analysis import extract_fft_features, analyze_statistics, plot_fft_comparison
-from esp32.training import mahalonobis_distance, extract_ml_features
+from esp32.analysis import analyze_statistics, plot_fft_comparison
+from esp32.training import mahalonobis_distance, extract_ml_features, extract_fft_features
+
 
 # Testes para training Mahalonobis Distance
 
@@ -133,8 +134,8 @@ def test_extract_ml_features():
     # A versão atual do meu código de extract_ml_features está extraindo apenas as métricas do domínio do tempo, não considerando as
     # partes de correlação e frequência, portanto, diminuiu o número de features que são retornadas de 30 para 15
 
-    #expected_length = num_axes * num_time_metrics + num_corr_pairs + num_axes * num_freq_metrics
-    expected_length = num_axes * num_time_metrics
+    expected_length = num_axes * num_time_metrics + num_corr_pairs + num_axes * num_freq_metrics
+    #expected_length = num_axes * num_time_metrics
     
     # Verificando se o vetor de características tem o formato esperado
     assert isinstance(features, np.ndarray)
@@ -174,8 +175,8 @@ def test_extract_ml_features_combination():
     # partes de correlação e frequência, portanto, diminuiu o número de features que são retornadas de 30 para 15
 
 
-    #expected_length = num_axes * num_time_metrics + num_corr_pairs + num_axes * num_freq_metrics
-    expected_length = num_axes * num_time_metrics
+    expected_length = num_axes * num_time_metrics + num_corr_pairs + num_axes * num_freq_metrics
+    #expected_length = num_axes * num_time_metrics
 
     # Verificar se todas as features estão concatenadas corretamente
 

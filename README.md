@@ -109,17 +109,17 @@ Portanto, ele está sabendo diferenciar bem entre as duas classes (normal e anom
 ### Explicações de algumas métricas
 `Mean`: Retorna a média de cada eixo, para o caso, o valor médio da aceleração nos eixos x, y e z. É possível observar que a magnitude dos valores são bem maiores no eixo Z, quando comparados aos presentes nos eixos x e y.
 
-`Variance`: np.var(sample, axis=0), # Mede a dispersão dos dados em torno da média
+`Variance`: Mede a dispersão dos dados em torno da média.
 
-`Kurtosis`: stats.kurtosis(sample), # Indica o achatamento da distribuição de dados
+`Kurtosis`: Indica o achatamento e como é feito a distribuição de dados coletados.
 
 `Entropia`: quantifica o grau de desordem no sinal.
 
-- Baixa entropia: sinal mais regular, repetitivo e previsível
+- Baixa entropia: sinal mais regular, repetitivo e previsível.
 
-- Alta entropia: sinal mais caótico, com variações imprevisíveis
+- Alta entropia: sinal mais caótico, com variações imprevisíveis.
 
-`Energia`: Mede a intensidade total da vibração em cada eixo
+`Energia`: Mede a intensidade total da vibração em cada eixo.
 
 `Distância de mahalonobis`: leva em conta a correlação entre as variáveis e a dispersão dos dados, assim ao calcular a distância para novos pontos, valores grandes indicam que o ponto está longe do padrão normal, podendo ser uma anomalia.
 
@@ -129,20 +129,20 @@ Isso é útil para definir thresholds estatísticos de corte para detectar anoma
 - Escolher um limiar que corresponda a 95% da distribuição (percentil 95 da qui-quadrado).
 - Pontos com distância acima desse limiar são considerados anômalos.
 
-`Matriz de confusão`: é uma tabela que resume o desempenho de um modelo de classificação. Ela compara os valores reais com os valores previstos e permite calcular métricas como precisão, revocação, acurácia, entre outras.
+`Matriz de confusão`: Tabela que resume o desempenho de um modelo de classificação, coompara os valores reais com os valores previstos e permite calcular métricas como precisão, recall, acurácia, entre outras.
 
 | | Previsto: Normal (0) | Previsto: Anomalia (1)
 | :--------- | :------: | :---------: |
 | `Real: Normal (0)` | TP (Verdadeiro Negativo) | FP (Falso Positivo) |
 | `Real: Anomalia (1)` | FN (Falso Negativo) | TN (Verdadeiro Positivo) |
 
-- True Positive (TP): Anomalias corretamente identificadas como anomalias
+- True Positive (TP): Anomalias corretamente identificadas como anomalias.
 
-- True Negative (TN): Normais corretamente identificados como normais
+- True Negative (TN): Normais corretamente identificados como normais.
 
-- False Positive (FP): Normais classificados erradamente como anomalias (falso alarme)
+- False Positive (FP): Normais classificados erradamente como anomalias.
 
-- False Negative (FN): Anomalias classificadas erradamente como normais (falha em detectar)
+- False Negative (FN): Anomalias classificadas erradamente como normais.
 
 `Curva ROC`: Usada para avaliar a performance de um modelo de classificação binária. Ela mostra a relação entre:
 
@@ -162,14 +162,14 @@ Sendo, a curva mais próxima do canto superior esquerdo indica melhor desempenho
 <details>
 <summary> Comparações de plot com DC </summary>
 
-![Comparação com DC](Imagens/graficos/comparison_com_dc_20250603_202328.png)
+![Comparação com DC](Imagens/graficos/comparison_com_dc_20250611_214522.png)
 </details>
 
 <details>
 
 <summary> Comparações de plot sem DC </summary>
 
-![Comparação sem DC](Imagens/graficos/comparison_sem_dc_20250603_202328.png)
+![Comparação sem DC](Imagens/graficos/comparison_sem_dc_20250611_214522.png)
 </details>
 
 
@@ -177,21 +177,21 @@ Sendo, a curva mais próxima do canto superior esquerdo indica melhor desempenho
 <details>
 <summary> RAW com n_samples = 10 </summary>
 
-![Dados RAW](Imagens/graficos/raw_10_20250603_202328.png)
+![Dados RAW](Imagens/graficos/raw_10_20250611_214522.png)
 
 </details>
 
 <details>
 <summary> RAW com n_samples = 200 </summary>
 
-![Dados RAW](Imagens/graficos/raw_20250603_202328.png)
+![Dados RAW](Imagens/graficos/raw_20250611_214522.png)
 </details>
 
 <details>
 <summary> Média das magnitudes FFT </summary>
 
 
-![Média](Imagens/graficos/mean_20250603_202328.png)
+![Média](Imagens/graficos/mean_20250611_214522.png)
 
 </details>
 
@@ -199,7 +199,7 @@ Sendo, a curva mais próxima do canto superior esquerdo indica melhor desempenho
 <summary> Variância </summary>
 
 
-![Variância](Imagens/graficos/variance_20250603_202328.png)
+![Variância](Imagens/graficos/variance_20250611_214522.png)
 
 </details>
 
@@ -207,7 +207,7 @@ Sendo, a curva mais próxima do canto superior esquerdo indica melhor desempenho
 <summary> Kurtosis </summary>
 
 
-![Kurtosis](Imagens/graficos/kurtosis_20250603_202328.png)
+![Kurtosis](Imagens/graficos/kurtosis_20250611_214522.png)
 
 </details>
 <details>
@@ -215,7 +215,7 @@ Sendo, a curva mais próxima do canto superior esquerdo indica melhor desempenho
 <summary> Entropia </summary>
 
 
-![Entropia](Imagens/graficos/entropy_20250603_202328.png)
+![Entropia](Imagens/graficos/entropy_20250611_214522.png)
 
 </details>
 <details>
@@ -223,51 +223,52 @@ Sendo, a curva mais próxima do canto superior esquerdo indica melhor desempenho
 <summary> Energia </summary>
 
 
-![Energia](Imagens/graficos/energy_20250603_202328.png)
+![Energia](Imagens/graficos/energy_20250611_214522.png)
 </details>
 <details>
 <summary> Histogramas </summary>
 
-![Histogramas](Imagens/graficos/histogram_20250603_202328.png)
+![Histogramas](Imagens/graficos/histogram_20250611_214522.png)
 </details>
 <details>
 <summary> Comparação de FFT </summary>
 
-![Comparação de FFT](Imagens/graficos/fft_comparison_20250603_202328.png)
+![Comparação de FFT](Imagens/graficos/fft_comparison_20250611_214522.png)
 </details>
 <details>
 <summary> Distribuição das distâcias </summary>
 
-![Distribuição das distâncias](Imagens/graficos/distance_distributions_20250603_202328_20250603_202353.png)
+![Distribuição das distâncias](Imagens/graficos/distance_distributions_20250611_214522_20250611_214547.png)
 
 </details>
 <details>
 <summary> Matriz de confusão </summary>
 
 
-![Matriz de confusão](Imagens/graficos/confusion_matrix_20250603_202328_20250603_202354.png)
+![Matriz de confusão](Imagens/graficos/confusion_matrix_20250611_214522_20250611_214548.png)
 </details>
 <details>
 <summary> Curva ROC </summary>
 
-![Curva ROC](Imagens/graficos/roc_curve_20250603_202328_20250603_202354.png)
+![Curva ROC](Imagens/graficos/roc_curve_20250611_214522_20250611_214548.png)
 
 </details>
 
 ## Análise dos gráficos obtidos
-- Comparação com DC: Observa a presença de ruído na aquisição, causando uma variação muito maior no eixo Z
-- Comparação sem DC: Sem o ruído o sinal diminui consideravelmente a oscilação e a variação no eixo Z causado pela anomalia se torna perceptível
-- RAW com n_samples = 20 e RAW com n_samples = 200: A concentração das amostras estão normais, sendo muito mais densas conforme o crescimento do samples.
-- Média: As médias para os eixos X e Y são muito próximas a 0, indicando normalidade, os pequenos valores encontrados em Z sinalizam que o sensor pode não se encontrar completamente alinhado, e portanto, com um leve efeito da gravidade remanescente, intensidade essa que para casos com anomálias são amplificados.
-- Variância: Conforme esperado, para casos com anomalias a dispersão dos dados é superior ao encontrados para dados normais.
-- Kurtosis: 
-- Entropia: Para os sinais com anomalia, foi encontrado uma maior entropia, indicando uma maior irregularidade nos dados coletados.
-- Energia: Os dados com anomalias, possui uma intensidade de vibração bem superior aos dados normais.
-- Histogramas: Sinaliza a concentração dos picos de alto valores no eixo Z, em especial, quando a anomalia é sinalizada, sendo um bom indicador para a progressão de uma falha.
-- Comparação de FFT: Trata-se de um espectro de frequência, sinalizando claramente a presença de uma anomalia, a qual, pode ser identificada conforme o comportamento e a intensidade de acordo com os valores em que os picos ocorrem.
-- Distribuição da Distância de Mahalanobis: Sinalizando que para os dados normais, a grande maioria se encontra abaixo do threshold definido, e assim, a quantidade de falsos positivos que serão classificados tende a ser mínima, logo, passando do threshold utilizado, pode ser classificado como anomalia.
-- Matriz de Confusão: Responsável por indicar as métricas utilizadas para o treinamento, em especial, permitindo aprimoramento do algoritmo de acordo com o critério que estivermos buscando melhorar.
-- Curva ROC: Sinalizando que o desempenho do nosso algoritmo encontra-se superior ao de um modelo aleatório, e com um indice de acerto satisfatório.
+
+- `Comparação com DC`: Com a presença da componente DC(valor médio) o dado obtido no eixo Z se encontra próximo a 10, sinalizando, portanto que se encontra com a presença da gravidade, dificultando portanto distorcer os gráficos e dificultar as leituras, já que as variações estarão em componentes de alta frequência e não no valor médio. Isso é identificado, quando ao observar o gráfico, temos uma escala de captação completamente distinta, fazendo com que os eixos X e Y, aparentem ser muito mais constantes.
+- `Comparação sem DC`: Sem o ruído da componente DC(valor médio) é possível observar as frequências desejadas e permitindo acompanhar os valores adequadas nas componentes, como as magnitudes dos dados estão ajustadas é possível observar a variação que ocorre, em especial, no eixo Z, que se encontra representado sem o efeito da gravidade.
+- `RAW com n_samples = 20 e RAW com n_samples = 200`: A concentração das amostras estão normais, sendo muito mais densas conforme o crescimento do samples.
+- `Média`: As médias para os eixos X e Y são muito próximas a 0, indicando normalidade, os pequenos valores encontrados em Z sinalizam que o sensor pode não se encontrar completamente alinhado, e portanto, com um leve efeito da gravidade remanescente, intensidade essa que para casos com anomálias são amplificados.
+- `Variância`: Conforme esperado, para casos com anomalias a dispersão dos dados é superior ao encontrados para dados normais.
+- `Kurtosis`: Valores baixos de Kurtosis, assim como esperado, já que não irão ocorrer alterações bruscar na magnitude das informações durante a realização da coleta, mas sim entre coletas, indicando portanto se tratar de um gráfico no estilo platykurtic.
+- `Entropia`: Para os sinais com anomalia, foi encontrado uma maior entropia, indicando uma maior irregularidade nos dados coletados.
+- `Energia`: Os dados com anomalias, possui uma intensidade de vibração bem superior aos dados normais.
+- `Histogramas`: Sinaliza a concentração dos picos de alto valores no eixo Z, em especial, quando a anomalia é sinalizada, sendo um bom indicador para a progressão de uma falha.
+- `Comparação de FFT`: Trata-se de um espectro de frequência, sinalizando claramente a presença de uma anomalia, a qual, pode ser identificada conforme o comportamento e a intensidade de acordo com os valores em que os picos ocorrem.
+- `Distribuição da Distância de Mahalanobis`: Sinalizando que para os dados normais, a grande maioria se encontra abaixo do threshold definido, e assim, a quantidade de falsos positivos que serão classificados tende a ser mínima, logo, passando do threshold utilizado, pode ser classificado como anomalia.
+- `Matriz de Confusão`: Responsável por indicar as métricas utilizadas para o treinamento, em especial, permitindo aprimoramento do algoritmo de acordo com o critério que estivermos buscando melhorar.
+- `Curva ROC`: Sinalizando que o desempenho do nosso algoritmo encontra-se superior ao de um modelo aleatório, e com um indice de acerto satisfatório.
 
 
 ## Confiança na detecção de anomalias e suavização
@@ -303,7 +304,7 @@ Idealmente essa inserção é substituida por uma coleta em tempo real com atual
 </details>
 
 #### Desafios observados
-Durante testes, foi identificado que a confiança apresentava oscilações abruptas entre amostras, como resultado de uma inserção não contínua, uma vez que, caso os dados estivessem sendo observados em intervalos constantes a falha iria progredir de modo gradual e não sofrer alterações abruptas, pensando em solucionar essas flutuações, que em cenários de falhas podem causar falsas impressões de recuperação ou de agravamento repentino, foi implementada uma suavização exponencial.
+Durante testes, foi identificado que a confiança apresentava oscilações abruptas entre amostras, como resultado de uma inserção não contínua, diferente do que seria o previsto acontecer no dia a dia, uma vez que, caso os dados estivessem sendo observados em intervalos constantes a falha iria progredir de modo gradual e não sofrer alterações abruptas, pensando em solucionar essas flutuações, que em cenários de falhas podem causar falsas impressões de recuperação ou de agravamento repentino, foi implementada uma suavização exponencial.
 
 #### Solução aplicada: suavização exponencial
 Foi implementada uma técnica de suavização exponencial da confiança:
@@ -356,8 +357,8 @@ Onde alpha controla o grau de suavização.
 
 ## Principais aprendizados
 - A utilização de métricas mais eficientes, permitem que o algoritmo utilizado seja otimizado ao ponto de ser possível identificar individualmente cada componente presente no equipamento analisado.
-- Entendimento prático de métricas como distância de Mahalonobis.
-- A importância de enriquecer a representação dos dados, combinando estatísticas básicas com análise de frequência (FFT) e correlação entre eixos, o que resultou em um modelo mais inteligente e confiável.
+- Entendimento prático de métricas de avaliação e otimização do modelo de treinamento.
+- A importância de enriquecer a representação e treinamento dos dados, combinando estatísticas básicas com análise de frequência (FFT) e correlação entre eixos, o que resultou em um modelo mais inteligente e confiável.
 - Aprimoramento do algoritmo de aprendizado através da utilização de métricas estatísticas.
 - Aplicação de técnicas de suavização para métricas voláteis.
 - Criação de uma pipeline de análise de sinais eficientes e extensível.
@@ -375,7 +376,7 @@ O projeto conta com testes automatizados utilizando pytest, garantindo a confiab
 <summary> Exemplo: Comparação de espectros FFT (normal x anomalia) </summary>
 
 ![Comparação dos espectros FFT entre as amostrais normais e anormais](Imagens/fft_comparison_20250418_185547.png)
-</detaisl>
+</details>
 
 ## Comandos úteis
 ```
@@ -395,17 +396,17 @@ python -m streamlit run app/streamlit_app.py
 - Criação de um dashboard que gere em tempo real um acompanhamento dos sensores que estão ativos, mantendo sob supervisão e evitando a necessidade de intervenção fora da programação.
 - Substituição do envio de informações de pacote de arquivos para acompanhamento em tempo real, permitindo inicio das rotinas de coleta, acompanhamento da progressão da anomalia.
 - Criação de um sistema de alerta conforme a gravidade das anomalias identificadas, com capacidade de envio das informações para um aplicativo próprio, um grupo de emails e até mesmo números de whatsapp, permitindo uma rápida programação para intervenção ou até mesmo parada imediata, para casos mais críticos, que possam vir a danificar seriamente o equipamento.
-- Implementada uma nova função de extração de características que amplia significativamente a capacidade do modelo de detectar padrões complexos de anomalias. Essa função combina métricas no domínio do tempo, análise de correlação entre os eixos e espectro de frequência via FFT. Essa abordagem proporciona uma visão mais rica e completa do comportamento do equipamento, aumentando a precisão do modelo de detecção.
+- Foi implementada uma função de extração de características que amplia significativamente a capacidade do modelo de detectar padrões complexos de anomalias. Essa função combina métricas no domínio do tempo, análise de correlação entre os eixos e espectro de frequência via FFT. Essa abordagem proporciona uma visão mais rica e completa do comportamento do equipamento, aumentando a precisão do modelo de detecção, porém é possível refinar e otimizar essa função e consequentemente o algoritmo.
 
 ## Contribuições
 Sinta-se à vontade para fazer adições a esse projeto, enviar sugestões ou relatar bugs.
 
 ## Agradecimentos
-Este projeto teve origem no Trabalho de Conclusão de Curso desenvolvido no início de 2022. No entanto, ao me deparar com um vídeo explicativo no canal do YouTube do [Daniel Romero](https://www.youtube.com/watch?v=6MECPST996I&ab_channel=DanielRomero), decidi retomar o projeto. A partir das explicações apresentadas, busquei aprimorar a proposta inicial. A ideia original do projeto de TCC consistia na produção de um conjunto capaz de captar e indicar previamente possíveis anomalias em equipamentos rotativos, utilizando um orçamento restrito.
+O tema desenvolvido nesse projeto é bem semelhante ao que que foi realizado no meu Trabalho de Conclusão de Curso desenvolvido no início de 2022 pela Unicamp. No entanto, ao me deparar com um vídeo explicativo no canal do YouTube do [Daniel Romero](https://www.youtube.com/watch?v=6MECPST996I&ab_channel=DanielRomero), decidi retomar o meu projeto e otimizá-lo, de acordo, com algumas ideias apresentadas pelo Daniel. A partir das explicações apresentadas, busquei aprimorar a proposta inicial. A ideia original do projeto consistia na produção de um conjunto capaz de captar e indicar previamente possíveis anomalias em equipamentos rotativos, utilizando um orçamento restrito.
 
-Com a nova abordagem apresentada pelo Daniel, foi possível implementar um algoritmo inteligente, incorporar métricas mais eficientes (como as apresentadas em seu vídeo), além de realizar melhorias em diversas funções e incluir testes unitários.
+Com a nova abordagem apresentada pelo Daniel, foi possível implementar um algoritmo inteligente, incorporar métricas mais eficientes (como as apresentadas em seu vídeo), além de realizar alterações em algumas funções e incluir testes unitários.
 
-Para fins educacionais, apesar de ter realizado uma coleta própria de dados, optei por utilizar os mesmos dados apresentados pelo Daniel, pois isso permitiu comparações diretas que auxiliaram na identificação de pontos de melhoria. Entre os aprimoramentos realizados, destacam-se: o refinamento das estatísticas utilizadas no treinamento, o uso de critérios de avaliação para o algoritmo, a definição dinâmica do limiar para a distância de Mahalanobis, a adição de um método de suavização exponencial da variação de confiança, a elaboração de gráficos e tabelas comparativas, a criação de testes automatizados, uma maior segmentação dos arquivos e alterações na forma de inserção dos dados no dashboard.
+Para fins educacionais, apesar de ter realizado uma coleta própria de dados, optei por utilizar os mesmos dados apresentados pelo Daniel, pois, isso permitiu uma maior facilidade e confiança com relação aos dados obtidos, além de comparações diretas que auxiliaram na identificação de pontos de melhoria. Entre os aprimoramentos realizados, destacam-se: o refinamento das estatísticas utilizadas no treinamento, o uso de critérios de avaliação para o algoritmo, a definição dinâmica do limiar para a distância de Mahalanobis, a adição de um método de suavização exponencial da variação de confiança, a elaboração de gráficos e tabelas comparativas, a criação de testes automatizados, uma maior segmentação dos arquivos e alterações na forma de inserção dos dados no dashboard.
 
 ## Links Úteis
 - [Linkedin](https://www.linkedin.com/in/lucas-belucci/)

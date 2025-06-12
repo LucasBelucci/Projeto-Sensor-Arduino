@@ -2,12 +2,15 @@
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Any
 import seaborn as sns
 from scipy import stats
+from matplotlib.figure import Figure
 import pandas as pd
 from sklearn.metrics import (confusion_matrix, precision_score,
                              recall_score, f1_score, accuracy_score,
                              roc_auc_score, roc_curve)
+
 from training import extract_fft_features
 from joblib import load
 from datetime import datetime
@@ -21,14 +24,33 @@ SAMPLE_RATE = 200
 SAMPLE_TIME = 0.5
 
 # %% Códigos responsáveis por identificar todos os arquivos que serão utilizados e realizar o carregamento dos dados que serão utilizados com uma remoção opcional do DC
-def get_data_files(operations):
+def get_data_files(operations: list[str]) -> list[Path]:
+    """
+    Retorna a lista de arquivos CSV em cada diretório de operação.
+
+    Args:
+        operations (list): Lista de nomes de pastas com dados.
+
+    Returns:
+        list: Retorna uma Lista com os caminhos para os arquivos CSV.
+    """
     files = []
     for op in operations:
         path = DATASET_PATH / op
         files.extend(list(path.glob("*.csv")))
     return files
 
-def load_samples(file_path, remove_dc = False):
+def load_samples(file_path: Path, remove_dc: bool = False) -> np.ndarray | None:
+    """
+    Carrega o arquivo CSV contendo os sinais de sensores e, opcionalmente, remove a média DC de cada canal.
+
+    Args:
+        file_path (Path): caminho para o arquivo a ser processado.
+        remove_dc (bool, optional): Se True, remove a média DC de cada componente, por padrão é definido como False.
+
+    Returns:
+        np.ndarray | None: Matriz com os dados do sensor ou None em caso de erro.
+    """
     try:
         data = np.genfromtxt(file_path, delimiter=",")
         if remove_dc:
@@ -38,33 +60,70 @@ def load_samples(file_path, remove_dc = False):
         print(f"Erro ao carregar {file_path}: {e}")
         return None
     
-def gerar_nome_arquivo(tipo, sufixo = "", extensao = "png", timestamp = None):
+def gerar_nome_arquivo(tipo: str, sufixo: str = "", extensao: str = "png", timestamp: str = None) -> Path:
+    """
+    Gera um nome de arquivo com base no tipo, sufixo, extensão e timestamp atual (ou fornecido).
+
+    Args:
+        tipo (str): Prefixo descritivo do tipo de gráfico ou imagem.
+        sufixo (str): Informação adicional para o nome do arquivo, por padrão é "".
+        extensão (str): Extensão do arquivo, por padrão é "png".
+        timestamp (str, optional): Timestamp formatado (ex: "20250603_202328"). Se None, utiliza o timestamp atual.
+
+    Returns:
+        Path: Caminho para o arquivo dentro da pasta "Imagens/graficos".
+    """
     if timestamp is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     nome = f"{tipo}_{sufixo}_{timestamp}" if sufixo else f"{tipo}_{timestamp}"
     return Path("Imagens/graficos") / f"{nome}.{extensao}"
 
-def salvar_figura(save_path):
-        save_path = Path(save_path)
-        try:
-            # Garante que a pasta existe
-            Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+def salvar_figura(save_path: Path) -> None:
+    """
+    Salva a figura matplotlib atual no caminho especificado.
 
-            # Tenta salvar a figura
-            plt.savefig(str(save_path), dpi=300, bbox_inches = "tight")
+    Além disso, garante que o diretório de destino exista e caso ocorra um erro no salvamento, uma mensagem de erro será exibida.
 
-            # Verifica se o arquivo foi salvo
-            if Path(save_path).exists():
-                print(f"[SUCESSO] Imagem salva em: {save_path.resolve()}")
-            else:
-                print(f"[ERRO] fig.savefig() executou mas o arquivo nao apareceu!")     
-        except Exception as e:
-            print(f"[ERRO] Não foi possível salvar a imagem: {e}")
-        finally:
-            plt.close()
+    Args:
+        save_path (Path): Caminho completo do arquivo onde a figura será salva, incluindo o nome e extensão.
+
+    Returns:
+        None
+    """
+    save_path = Path(save_path)
+    try:
+        # Garante que a pasta existe
+        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+
+        # Tenta salvar a figura
+        plt.savefig(str(save_path), dpi=300, bbox_inches = "tight")
+
+        # Verifica se o arquivo foi salvo
+        if Path(save_path).exists():
+            print(f"[SUCESSO] Imagem salva em: {save_path.resolve()}")
+        else:
+            print(f"[ERRO] plt.savefig() executou mas o arquivo nao apareceu!")     
+    except Exception as e:
+        print(f"[ERRO] Não foi possível salvar a imagem: {e}")
+    finally:
+        plt.close()
 
 # Funções responsáveis pelos gráficos comparativos que serão gerados entre as informações normais e as anomalias, através de gráficos de linha, dispersão em 3D
-def plot_comparison(normal_file, anomaly_file, remove_dc=False, save_path=None):
+def plot_comparison(normal_file: Path, anomaly_file: Path, remove_dc: bool=False, save_path: Path=None) -> Figure:
+    """
+    Realiza o plot e compara os sinais de operação normal e anormal de sensores em gráficos separados.
+
+    Os sinais podem ter o componente DC removido e o gráfico gerado pode ser salvo no caminho fornecido.
+
+    Args:
+        normal_file (Path): Caminho para o arquivo CSV contendo dados normais.
+        anomaly_file (Path): Caminho para o arquivo CSV contendo dados anômalos.
+        remove_dc (bool, optional): Se True, remove a média DC dos sinais antes da plotagem.
+        save_path (Path, optional): Caminho para salva a figura gferada, se None apenas exibe o gráfico.
+
+    Returns:
+        matplotlib.figure.Figure: Objeto da figura gerada.
+    """
     normal_data = load_samples(normal_file, remove_dc)
     anomaly_data = load_samples(anomaly_file, remove_dc)
 
@@ -94,7 +153,25 @@ def plot_comparison(normal_file, anomaly_file, remove_dc=False, save_path=None):
         salvar_figura(save_path)
     return fig
 
-def plot_3d_scatter(normal_files, anomaly_files, num_samples=3, feature_type="raw", save_path=None):
+def plot_3d_scatter(normal_files: list[Path], anomaly_files: list[Path], num_samples: int=3, feature_type: str="raw", save_path: Path=None) -> Figure:
+    """
+    Plota um gráfico 3D comparando dados normais e anômalos do acelerômetro, com base em diferentes tipos de features.
+
+    Os dados podem ser processados como brutos ("raw") ou transformados via estatísticas como média, variância, etc.
+    Apenas os primeiros 'num_samples' arquivos de cada tipo são considerados.
+
+    Args:
+        normal_files (list[Path]): Lista de caminhos para arquivos CSV com dados normais.
+        anomaly_files (list[Path]): Lista de caminhos para arquivos CSV com dados anômalos.
+        num_samples (int, optional): Número de amostras a serem utilizadas (padrão = 3).
+        feature_type (str, optional): Tipo de feature a ser extraída. Pode ser:
+            - "raw": usa os dados brutos.
+            - "mean", "variance", "kurtosis", "entropy", "energy": aplica a função correspondente.
+        save_path (Path, optional): Caminho para salvar a figura gerada. Se None, a figura não será salva.
+
+    Returns:
+        matplotlib.figure.Figure: Objeto da figura gerada.
+    """
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111, projection="3d")
 
@@ -165,7 +242,7 @@ def plot_3d_scatter(normal_files, anomaly_files, num_samples=3, feature_type="ra
     ax.set_xlabel("X-axis")
     ax.set_ylabel("Y-axis")
     ax.set_zlabel("Z-axis")
-    ax.set_title(f"3D Visualização de {feature_type} Data")
+    ax.set_title(f"3D Visualização de {feature_type.capitalize()} Data")
     ax.legend()
 
     if save_path:
@@ -173,16 +250,19 @@ def plot_3d_scatter(normal_files, anomaly_files, num_samples=3, feature_type="ra
 
     return fig
 
-def plot_fft(df, st, sampling_rate=100, eixo='x', width=3.5, height=2.5):
+def plot_fft(df:pd.DataFrame, st, sampling_rate: int=100, eixo: str='x', width: float=3.5, height:float=2.5) -> None:
     """
     Plota o espectro de frequência (FFT) de um eixo específico.
 
     Args:
-        df (pd.DataFrame): DataFrame com colunas ['x', 'y', 'z']
-        st (streamlit module): Módulo streamlit
-        eixo (str): Eixo a ser plotado ('x', 'y' ou 'z')
-        width (float): Largura da figura
-        height (float): Altura da figura
+        df (pd.DataFrame): DataFrame com colunas ['x', 'y', 'z'].
+        st (streamlit module): Módulo streamlit.
+        eixo (str): Eixo a ser plotado ('x', 'y' ou 'z').
+        width (float): Largura da figura.
+        height (float): Altura da figura.
+
+    Returns:
+        matplotlib.figure.Figure: Objeto da figura gerada.
     """
     if eixo not in df.columns:
         st.warning(f"Eixo '{eixo}' não encontrado")
@@ -209,7 +289,17 @@ def plot_fft(df, st, sampling_rate=100, eixo='x', width=3.5, height=2.5):
     st.pyplot(fig, use_container_width=True)
     plt.close(fig)
 
-def plot_feature_histogram(features, st):
+def plot_feature_histogram(features: pd.DataFrame, st) -> None:
+    """
+    Plota um histograma de cada uma das features.
+
+    Args:
+        features (pd.Dataframe): Dataframe contendo as features a serem analisadas.
+        st (módulo): Módulo do Streamlite    
+    
+    Returns:
+        None
+    """
     for col in features.columns:
         fig, ax = plt.subplots()
         ax.hist(features[col], bins=20, color='skyblue', edgecolor="black")
@@ -218,7 +308,19 @@ def plot_feature_histogram(features, st):
 
         plt.close(fig)
 
-def plot_histograms(normal_files, anomaly_files, save_path=None):
+def plot_histograms(normal_files: list[Path], anomaly_files: list[Path], save_path: Path=None) -> None:
+    """
+    Faz o plot de histogramas utilizando as features, porém comparando para os valores nas amostras normais com as amostras anomalas.
+    O gráfico pode ser salvo no caminho indicado, caso desejado.
+
+    Args:
+        normal_files (list[Path]): Lista de caminhos para arquivos CSV com dados normais.
+        anomaly_files (list[Path]): Lista de caminhos para arquivos CSV com dados anômalos.
+        save_path (Path, optional): Caminho para salvar a figura gerada. Se None, a figura não será salva.
+
+    Returns:
+        None
+    """
     plt.figure(figsize=(12, 6))
 
     normal_valid = []
@@ -266,8 +368,20 @@ def plot_histograms(normal_files, anomaly_files, save_path=None):
 
 # Definição das estatísticas básicas que serão utilizadas como critérios de avaliação de desempenho dos algoritmos de aprendizado, são elas Média, variância, Kurtosis, Skew, MAD e correlação
 
-def analyze_statistics(sample_file):
+def analyze_statistics(sample_file:Path) -> dict[str, Any]:
+    """
+    Realiza o carregamento dos dados do arquivo CSV, determina as estatísticas alvo e salva os resultados em um dicionário.
+
+    Args:
+        sample_file (Path): Arquivo CSV com os dados a serem utilizados.
+
+    Returns:
+        dict (str,): Dicionário de strings com os resultados obtidos nas estatísticas alvo
+    """
     sample = load_samples(sample_file, remove_dc=True)
+
+    if sample is None:
+        raise ValueError(f"Não foi possível carregar amostra de {sample_file}")
 
     stats_dict = {
         #"Sample shape": sample.shape, # Retorna as dimensões do conjunto de dados
@@ -283,7 +397,20 @@ def analyze_statistics(sample_file):
         
 # Geração de um gráfico comparativo das frequências entre operações normais e anômalas, ideal para identificar padrões de vibração atípicos
 
-def plot_fft_comparison(normal_files, anomaly_files, num_samples=200, start_bin=1, save_path=None):
+def plot_fft_comparison(normal_files: list[Path], anomaly_files: list[Path], num_samples: int=200, start_bin: int=1, save_path: Path=None) -> Figure:
+    """
+    Compara os espectros de frequência médios entre amostras normais e anômalas para os 3 eixos.
+
+    Args:
+        normal_files (list[Path]): Caminhos para arquivos CSV com dados normais.
+        anomaly_files (list[Path]): Caminhos para arquivos CSV com dados anômalos.
+        num_samples (int): Quantidade máxima de amostras a considerar de cada tipo.
+        start_bin (int): Índice inicial da FFT a ser exibido (ignora a componente DC se > 0).
+        save_path (Path, optional): Caminho para salvar a figura. Se None, a figura não é salva.
+
+    Returns:
+        matplotlib.figure.Figure: Figura matplotlib contendo os gráficos comparativos.
+    """
     normal_ffts = []
     anomaly_ffts = []
 
@@ -323,66 +450,28 @@ def plot_fft_comparison(normal_files, anomaly_files, num_samples=200, start_bin=
     return fig
 
 # --------------- ##
-
-def find_optimal_threshold(normal_dist, anomaly_dist, n_splits=5):
-    normal_range = np.percentile(normal_dist, [75, 99])
-    anomaly_range = np.percentile(anomaly_dist, [1, 25])
-
-    thresholds = np.linspace(normal_range[0], anomaly_range[1], 100)
-
-    best_score = -np.inf
-    best_threshold = None
-    best_metrics = None
-
-    for threshold in thresholds:
-        fold_metrics = []
-        for _ in range(n_splits):
-            normal_mask = np.random.choice(
-                [True, False], len(normal_dist), p=[0.7, 0.3]
-            )
-            anomaly_mask = np.random.choice(
-                [True, False], len(anomaly_dist), p=[0.7, 0.3]
-            )
-
-            normal_pred = normal_dist[normal_mask] > threshold
-            anomaly_pred = anomaly_dist[anomaly_mask] > threshold
-
-            fp_rate = np.mean(normal_pred)
-            tp_rate = np.mean(anomaly_pred)
-
-            # Penalização para resultados muito altos
-
-            score = tp_rate - (5 * fp_rate)
-
-            # Penalização para resultados perfeitos, indicando overfitting
-
-            if fp_rate == 0 or tp_rate == 1:
-                score *= (
-                    0.5
-                )
-
-            fold_metrics.append(
-                {"score": score, "fp_rate": fp_rate, "tp_rate": tp_rate}
-            )
-
-        avg_score = np.mean([m["score"] for m in fold_metrics])
-        score_std = np.std([m["score"] for m in fold_metrics])
-
-        # Preferência por resultados mais estáveis
-
-        final_score = avg_score - (2 * score_std)
-
-        if final_score > best_score:
-            best_score = final_score
-            best_threshold = threshold
-            best_metrics = {
-                "fp_rate": np.mean([m["fp_rate"] for m in fold_metrics]),
-                "tp_rate": np.mean([m["tp_rate"] for m in fold_metrics])
-            }
-
-        return best_threshold, best_metrics
     
-def validate_model(normal_distances, anomaly_distances, threshold):
+def validate_model(normal_distances: np.ndarray, anomaly_distances: np.ndarray, threshold: float) -> dict[str, float]:
+    """
+    Avalia o desempenho de um modelo de detecção de anomalias com base nas distâncias e um limiar.
+
+    Compara as distâncias de exemplos normais e anômalos em relação a um threshold fornecido,
+    gerando métricas de desempenho como acurácia, precisão, recall, F1-score, AUC e taxa de falsos positivos.
+
+    Args:
+        normal_distances (np.ndarray): Array com as distâncias Mahalanobis dos exemplos normais.
+        anomaly_distances (np.ndarray): Array com as distâncias Mahalanobis dos exemplos anômalos.
+        threshold (float): Valor de corte para classificar uma amostra como anômala.
+
+    Returns:
+        dict[str, float]: Dicionário contendo as métricas de avaliação:
+            - 'accuracy': Acurácia do modelo.
+            - 'precision': Precisão para classe anômala.
+            - 'recall': Sensibilidade (taxa de verdadeiros positivos).
+            - 'f1': F1-score.
+            - 'auc': Área sob a curva ROC.
+            - 'false_positive_rate': Taxa de falsos positivos entre os exemplos normais.
+    """
     y_true = np.concatenate(
         [np.zeros(len(normal_distances)), np.ones(len(anomaly_distances))]
     )
@@ -405,7 +494,19 @@ def validate_model(normal_distances, anomaly_distances, threshold):
 
     return results
     
-def plot_distance_distributions(normal_dist, anomaly_dist, threshold=None, save_path=None):
+def plot_distance_distributions(normal_dist: np.ndarray, anomaly_dist: np.ndarray, threshold: float=None, save_path: Path=None) -> Figure:
+    """
+    Plota a distribuição das distâncias de Mahalanobis para amostras normais e anômalas, com opção de mostrar o limiar (threshold) e salvar a figura.
+
+    Args:
+        normal_dist (np.ndarray): Distâncias Mahalanobis das amostras normais.
+        anomaly_dist (np.ndarray): Distâncias Mahalanobis das amostras anômalas.
+        threshold (float, optional): Limiar para classificar uma amostra como anômala. Se None, o limiar não será exibido.
+        save_path (Path, optional): Caminho para salvar a figura. Se None, a figura não será salva.
+
+    Returns:
+        matplotlib.figure.Figure: Figura matplotlib contendo os gráficos comparativos.
+    """
     fig, ax = plt.subplots(figsize=(12, 6))
     n_bins = int(np.sqrt(len(normal_dist) + len(anomaly_dist)))
 
@@ -432,7 +533,18 @@ def plot_distance_distributions(normal_dist, anomaly_dist, threshold=None, save_
 
     return fig
 
-def plot_roc_curve(normal_distances, anomaly_distances, save_path=None):
+def plot_roc_curve(normal_distances: np.ndarray, anomaly_distances: np.ndarray, save_path: Path=None) -> Figure:
+    """
+    Plota a curva ROC com base nas distâncias de Mahalanobis para amostras normais e anômalas, comparando o desempenho do modelo com uma classificação aleatória.
+
+    Args:
+        normal_distances (np.ndarray): Distâncias Mahalanobis das amostras normais.
+        anomaly_distances (np.ndarray): Distâncias Mahalanobis das amostras anômalas.
+        save_path (Path, optional): Caminho para salvar a figura. Se None, a figura não será salva.
+
+    Returns:
+        matplotlib.figure.Figure: Figura contendo a curva ROC gerada.
+    """
     y_true = np.concatenate(
         [np.zeros(len(normal_distances)), np.ones(len(anomaly_distances))]
     )
@@ -454,7 +566,18 @@ def plot_roc_curve(normal_distances, anomaly_distances, save_path=None):
         salvar_figura(save_path)
     return fig
 
-def plot_confusion_matrix(y_true, y_pred, save_path=None):
+def plot_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, save_path: Path=None) -> Figure:
+    """
+    Plota a matriz de confusão com os valores de verdadeiros positivos, falsos positivos, verdadeiros negativos e falsos negativos com base nos rótulos reais e previstos.
+
+    Args:
+        y_true (np.ndarray): Rótulos reais (0 para normal, 1 para anômalo).
+        y_pred (np.ndarray): Rótulos previstos pelo modelo.
+        save_path (Path, optional): Caminho para salvar a figura. Se None, a figura não será salva.
+
+    Returns:
+        matplotlib.figure.Figure: Figura contendo a curva ROC gerada.
+    """
     cm = confusion_matrix(y_true, y_pred)
     fig, ax = plt.subplots(figsize=(8, 6))
     sns.heatmap(
@@ -470,7 +593,18 @@ def plot_confusion_matrix(y_true, y_pred, save_path=None):
         salvar_figura(save_path)
     return fig
 
-def load_distributions():
+def load_distributions() -> tuple[np.ndarray, np.ndarray, float, np.ndarray, np.ndarray]:
+    """
+    Carrega os arquivos serializados com as distribuições de distâncias, threshold e rótulos salvos.
+
+    Returns:
+        tuple: Contém:
+            - normal_dist (np.ndarray): Distâncias Mahalanobis das amostras normais.
+            - anomaly_dist (np.ndarray): Distâncias Mahalanobis das amostras anômalas.
+            - threshold (float): Limiar utilizado para classificar amostras como anômalas.
+            - y_true (np.ndarray): Rótulos reais (0 para normal, 1 para anômalo).
+            - y_pred (np.ndarray): Rótulos previstos (com base no threshold).
+    """
     # Carregando os objetos
     normal_dist = load("models/normal_dist.joblib")
     anomaly_dist = load("models/anomaly_dist.joblib")

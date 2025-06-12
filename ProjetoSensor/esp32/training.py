@@ -1,16 +1,30 @@
 # Import e Setup
 
-from pathlib import Path
 import os
+from pathlib import Path
+from typing import Tuple
+
 import numpy as np
 from scipy import stats
-from typing import Tuple
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import (classification_report, roc_auc_score)
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from joblib import dump
 import joblib
 
+'''
+Importações realizadas para testar a curva ROC e a distribuição de distâncias
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+
+from sklearn.metrics import (confusion_matrix, precision_score,
+                             recall_score, f1_score, accuracy_score,
+                             roc_auc_score, roc_curve)
+'''
+
+## Configurações de DATASET
 DATASET_PATH = Path("ProjetoSensor/datasets/ac")
 NORMAL_OPS = ["silent_0_baseline"]
 ANOMALY_OPS = [
@@ -23,22 +37,43 @@ ANOMALY_OPS = [
 SAMPLE_RATE = 200
 SAMPLE_TIME = 0.5
 
-# Valores para treinamento
-
+## Hiperparâmetros
 VAL_RATIO = 0.2
 TEST_RATIO = 0.2
 MAX_ANOMALY_SAMPLES = 100
 MAX_NORMAL_SAMPLES = 100
+
+## Caminho do modelo
 MODEL_PATH = Path("models/mahalonobis_model.npz")
 
 # %%
-def get_data_files(operations):
+def get_data_files(operations: list[str]) -> list[Path]:
+    """
+    Retorna a lista de arquivos CSV em cada diretório de operação.
+
+    Args:
+        operations (list): Lista de nomes de pastas com dados.
+
+    Returns:
+        list: Retorna uma Lista com os caminhos para os arquivos CSV.
+    """
     files = []
     for op in operations:
         files.extend(list((DATASET_PATH / op).glob("*.csv")))
     return files
 
-def mahalonobis_distance(x, mu, cov):
+def mahalonobis_distance(x: np.ndarray, mu: np.ndarray, cov: np.ndarray) -> np.ndarray:
+    """
+    Calcula a distância de Mahalonobis entre os vetores 'x' e a média 'mu', com base na matriz de covariância 'cov'.
+
+    Args:
+        x (np.ndarray): Vetores de entrada, shape (n amostras, n features).
+        mu (np.ndarray): Vetor de média, shape (n features).
+        cov (np.ndarray): Matriz de covariância, shape (n features, n features).
+
+    Returns:
+        np.ndarray: Distância de Mahalanobis de cada amostra em 'x'.
+    """
     x_mu = np.atleast_2d(x - mu)
 
     if np.ndim(cov) == 1:
@@ -70,7 +105,7 @@ def extract_fft_features(
     
     Returns:
         np.ndarray: FFT do sinal com shape(n_samples//2, n_axes)
-        np.ndarray(opcional): Frequências associadas a cada componente da FFT
+        np.ndarray: Frequências associadas a cada componente da FFT
     """
 
     if not isinstance(sample, np.ndarray):
@@ -157,7 +192,18 @@ def extract_ml_features(sample: np.ndarray) -> np.ndarray:
     # Concatena tudo em um vetor 1D
     return np.concatenate(features)
 
-def load_and_extract_files(file_path):
+def load_and_extract_file(file_path: Path) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Carrega o arquivo CSV contendo os sinais de sensores, remove a média DC, adiciona o ruído aleatório e extrai características no domínio da frequência (FFT).
+
+    Args:
+        file_path (Path): caminho para o arquivo a ser processado.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]:
+            - Matriz com as componentes FFT (shape: n_samples//2, n_axes)
+            - Frequências associadas a cada componente da FFT
+    """
     data = np.genfromtxt(file_path, delimiter=",")
     data = data - np.mean(data, axis=0)
 
@@ -168,29 +214,164 @@ def load_and_extract_files(file_path):
 
     return extract_fft_features(data)
 
-def create_dataset(files, max_samples=50):
+def create_dataset(files: list[Path], max_samples: int=50) -> np.ndarray:
+    """
+    Processa uma lista de arquivos CSV contendo sinais de sensores. Para cada arquivo, aplica a remoção da média DC, 
+    adiciona ruído aleatório e extrai características no domínio da frequência (FFT) por meio da função 
+    `load_and_extract_file`.
 
-    # Se tiver mais arquivos do que o max_samples, eles serão escolhidos de maneira aleatória
+    Se o número de arquivos fornecidos exceder `max_samples`, um subconjunto aleatório será selecionado.
 
+    Args:
+        files (list[Path]): Lista de caminhos para os arquivos CSV a serem processados.
+        max_samples (int, optional): Número máximo de arquivos a serem utilizados. Valor padrão é 50.
+
+    Returns:
+        np.ndarray: Array contendo os vetores de características extraídas de cada arquivo.
+    """
+    # Seleciona arquivos aleatórios se exceder o número máximo permitido
     if len(files) > max_samples:
         files = np.random.choice(files, max_samples, replace=False)
 
-    features = [load_and_extract_files(f) for f in files]
+    features = [load_and_extract_file(f) for f in files]
     return np.array(features)
 
-def train_model():
-    # Carrega e prepara os dados 
+'''
+def plot_roc_curve(normal_distances, anomaly_distances, save_path=None):
+    y_true = np.concatenate(
+        [np.zeros(len(normal_distances)), np.ones(len(anomaly_distances))]
+    )
+    distances = np.concatenate([normal_distances, anomaly_distances])
 
+    fpr, tpr, _ = roc_curve(y_true, distances)
+    auc = roc_auc_score(y_true, distances)
+
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.plot(fpr, tpr, label=f"Curva ROC (AUC = {auc:.3f})")
+    ax.plot([0, 1], [0,1], "k--", label="Random")
+    ax.set_xlabel("Taxa de Falsos positivos")
+    ax.set_ylabel("Taxa de Verdadeiros positivos")
+    ax.set_title("Curva ROC")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+
+    #if save_path:
+    #    salvar_figura(save_path)
+    #return fig
+
+def plot_confusion_matrix(y_true, y_pred, save_path=None):
+    cm = confusion_matrix(y_true, y_pred)
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.heatmap(
+        pd.DataFrame(cm, index=["Normal", "Anomaly"], columns=["Normal", "Anomaly"]),
+                     annot=True, fmt="d", cmap="Blues",
+    )
+    
+    ax.set_title("Matriz de Confusão")
+    ax.set_xlabel("Predicted Label")
+    ax.set_ylabel("True Label")
+
+    #if save_path:
+    #    salvar_figura(save_path)
+    return fig
+'''
+def find_optimal_threshold(normal_dist: Path, anomaly_dist: Path, n_splits: int=5) -> Tuple[np.ndarray, dict]:
+    """
+    Encontra o limiar (threshold) ótimo para classificar anomalias com base em distribuições de distância.
+
+    Args:
+        normal_dist (np.ndarray): Vetor de distâncias de amostras normais.
+        anomaly_dist (np.ndarray): Vetor de distâncias de amostras anômalas.
+        n_splits (int, optional): Número de iterações de validação (simulação de cross-validation). Padrão é 5.
+
+    Returns:
+        Tuple[np.ndarray, dict]: 
+            - Threshold ótimo encontrado (float)
+            - Dicionário com métricas médias (fp_rate e tp_rate)
+    """
+    normal_range = np.percentile(normal_dist, [75, 99])
+    anomaly_range = np.percentile(anomaly_dist, [1, 25])
+
+    thresholds = np.linspace(normal_range[0], anomaly_range[1], 100)
+
+    best_score = -np.inf
+    best_threshold = None
+    best_metrics = None
+
+    for threshold in thresholds:
+        fold_metrics = []
+        for _ in range(n_splits):
+            normal_mask = np.random.choice(
+                [True, False], len(normal_dist), p=[0.7, 0.3]
+            )
+            anomaly_mask = np.random.choice(
+                [True, False], len(anomaly_dist), p=[0.7, 0.3]
+            )
+
+            normal_pred = normal_dist[normal_mask] > threshold
+            anomaly_pred = anomaly_dist[anomaly_mask] > threshold
+
+            fp_rate = np.mean(normal_pred)
+            tp_rate = np.mean(anomaly_pred)
+
+            # Penalização para resultados muito altos
+            penalizacao = 3
+
+            score = tp_rate - (penalizacao * fp_rate)
+
+            # Penalização para resultados perfeitos, indicando overfitting
+
+            if fp_rate == 0 or tp_rate == 1:
+                score *= (
+                    0.5
+                )
+
+            fold_metrics.append(
+                {"score": score, "fp_rate": fp_rate, "tp_rate": tp_rate}
+            )
+
+        avg_score = np.mean([m["score"] for m in fold_metrics])
+        score_std = np.std([m["score"] for m in fold_metrics])
+
+        # Preferência por resultados mais estáveis
+
+        final_score = avg_score - (2 * score_std)
+
+        if final_score > best_score:
+            best_score = final_score
+            best_threshold = threshold
+            best_metrics = {
+                "fp_rate": np.mean([m["fp_rate"] for m in fold_metrics]),
+                "tp_rate": np.mean([m["tp_rate"] for m in fold_metrics])
+            }
+
+    return best_threshold, best_metrics
+
+def train_model() -> None:
+    """
+    Treina um modelo de detecção de anomalias baseado em distância de Mahalanobis, usando dados de sensores.
+
+    O processo inclui:
+    - Carregamento de dados normais e anômalos de múltiplos arquivos CSV.
+    - Extração de características no domínio da frequência (FFT) e estatísticas.
+    - Escalonamento dos dados com StandardScaler.
+    - Cálculo da média e matriz de covariância dos dados normais de treino.
+    - Definição de um limiar com 5% de taxa de falso positivo baseado na distribuição de distâncias.
+    - Avaliação do modelo com métricas de classificação e AUC.
+    - Salvamento dos artefatos treinados: modelo (mu, cov, threshold), scaler e resultados intermediários.
+
+    Retorna:
+        None
+    """
+    # Carrega e prepara os dados 
     normal_files = get_data_files(NORMAL_OPS)
     anomaly_files = get_data_files(ANOMALY_OPS)
     print(f"Encontrado: {len(normal_files)} arquivos normais e {len(anomaly_files)} arquivo anomalos")
 
     # Separa os dados normais
-
     train_files, test_files = train_test_split(normal_files, test_size=0.4, random_state=42)
 
     # Criação dos datasets
-
     X_train = create_dataset(train_files)
     X_test = create_dataset(test_files)
     X_anomaly = create_dataset(anomaly_files)
@@ -200,14 +381,12 @@ def train_model():
     X_anomaly_raw = np.array([extract_ml_features(np.atleast_2d(x)) for x in X_anomaly])
 
     # Features do Scaler
-
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train_raw)
     X_test_scaled = scaler.transform(X_test_raw)
     X_anomaly_scaled = scaler.transform(X_anomaly_raw)
     
-    # Modelo de treino
-
+    # Cálculo da média e da covariância
     mu = np.mean(X_train_scaled, axis=0)
     cov = np.cov(X_train_scaled.T)
 
@@ -215,16 +394,25 @@ def train_model():
         cov = np.array([[cov]])
 
     # Encontrando o limiar com 5% de taxa de falso positivo
-
     normal_dist = mahalonobis_distance(X_test_scaled, mu, cov)
     anomaly_dist = mahalonobis_distance(X_anomaly_scaled, mu, cov)
-    threshold = np.percentile(normal_dist, 95)
+    threshold, metrics = find_optimal_threshold(normal_dist, anomaly_dist)
+    #threshold = np.percentile(normal_dist, 95)
+    print(f"\nThreshold encontrado: {threshold:.3f}")
+    print(f"Taxa de falso positivo (FP rate): {metrics['fp_rate']:.2%}")
+    print(f"Taxa de verdadeiro positivo (TP rate): {metrics['tp_rate']:.2%}")
+    
 
 
     # Avaliação
-
     y_true = np.concatenate([np.zeros(len(X_test)), np.ones(len(X_anomaly))])
     y_pred = np.concatenate([normal_dist > threshold, anomaly_dist > threshold]).astype(int)
+
+    #plot_roc_curve(normal_dist, anomaly_dist, None)
+    #plt.show()
+
+    #plot_confusion_matrix(y_true, y_pred, None)
+    #plt.show()
 
     # Mostrando os resultados através dos plots e dos prints
     #print("\nValores usados: ")
@@ -237,7 +425,6 @@ def train_model():
     print(f"AUC Score: {roc_auc_score(y_true, np.concatenate([normal_dist, anomaly_dist])):.3f}")
 
     # Salvando o modelo de treinamento gerado
-
     os.makedirs("models", exist_ok=True)
     np.savez(MODEL_PATH, mu=mu, cov=cov, threshold=threshold)
     print(f"\nModelo salvo em {MODEL_PATH}")

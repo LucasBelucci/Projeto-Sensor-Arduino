@@ -104,8 +104,6 @@ Para os dados, são encontrados:
 
 Portanto, ele está sabendo diferenciar bem entre as duas classes (normal e anomalia) ao variar o limiar de decisão.
 
-# Preciso descrever os valores das métricas, explicar os gráficos obtidos(talvez uma aba que faça expansão com as imagens e refatorar algumas funções)
-
 ### Explicações de algumas métricas
 `Mean`: Retorna a média de cada eixo, para o caso, o valor médio da aceleração nos eixos x, y e z. É possível observar que a magnitude dos valores são bem maiores no eixo Z, quando comparados aos presentes nos eixos x e y.
 

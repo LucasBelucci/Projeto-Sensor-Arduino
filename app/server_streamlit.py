@@ -1,15 +1,21 @@
 from flask import Flask, request, jsonify
 import json
-from pathlib import Path
 import os
 import csv
 
-DATA_DIR = "ProjetoSensor/datasets/ac/latest_data"
+
+def get_secrets():
+    with open('keys.json') as f:
+        return json.load()
+
+secrets = get_secrets()
+DATA_DIR = secrets.get("DATABASE_URL_STREAMLIT")
+DEBUG_MODE = secrets.get("DEBUG", False)
+
 CSV_PATH = os.path.join(DATA_DIR, "latest_data.csv")
+os.makedirs(DATA_DIR, exist_ok=True)
 
 app = Flask(__name__)
-
-os.makedirs(DATA_DIR, exist_ok=True)
 
 @app.route("/", methods=["GET"])
 def status():
@@ -33,7 +39,6 @@ def receive_data():
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=DEBUG_MODE)

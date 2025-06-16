@@ -3,15 +3,7 @@ import pandas as pd
 from pathlib import Path
 from utils import AnomalyDetector
 
-# Baseline
-DATA_PATH = Path("ProjetoSensor/datasets/ac/latest_data/baseline_latest_data.csv")
-
-# Anomaly
-#DATA_PATH = Path("ProjetoSensor/datasets/ac/latest_data/anomaly_latest_data.csv")
-
 MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / "mahalonobis_model.npz"
-#THRESHOLD_PATH = Path(__file__).resolve().parent.parent / "models" / "threshold.joblib"
-#SCALER_PATH = Path(__file__).resolve().parent.parent / "models" / "scaler.pkl"
 
 st.title("Detecção de Anomalias com acelerômetro")
 

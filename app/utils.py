@@ -18,7 +18,7 @@ class AnomalyDetector:
         self.last_prediction = [False, False, False]
         self.recent_distances = []
     
-        logger.info(f"Modelo carregado com threshold: %.2f", self.threshold)
+        #logger.info(f"Modelo carregado com threshold: %.2f", self.threshold)
 
     def preprocess(self, data, remove_dc=True):
         if remove_dc:

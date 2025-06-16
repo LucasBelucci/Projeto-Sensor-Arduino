@@ -87,14 +87,7 @@ def mahalonobis_distance(x: np.ndarray, mu: np.ndarray, cov: np.ndarray) -> np.n
 # Aplicando então a janela nos dados antes de realizar a FFT, calculando apenas a parte positiva, extraindo a magnitude e ignorando as fases, 
 # será obtido uma matriz com as frequências extraídas de cada eixo após ignorar a simetria
 
-def extract_fft_features(
-        sample: np.ndarray,
-        include_dc: bool = False,
-        window: str = "hann",
-        return_freqs: bool = False,
-        sampling_rate: float = 1.0
-    ) -> np.ndarray | Tuple[np.ndarray, np.ndarray]:
-    
+def extract_fft_features(sample: np.ndarray, include_dc: bool = False, window: str = "hann", return_freqs: bool = False, sampling_rate: float = 1.0) -> np.ndarray | Tuple[np.ndarray, np.ndarray]: 
     """
     Extrai caracteristicas de FFT de um sinal multivariado
 
@@ -177,17 +170,17 @@ def extract_ml_features(sample: np.ndarray) -> np.ndarray:
     features.append(np.mean(np.abs(sample - np.mean(sample, axis=0)), axis=0))
 
     # Correlação entre eixos
-    corr_matrix = np.corrcoef(sample.T) # shape: (n_axes, n_axes)
-    tril_indices = np.tril_indices_from(corr_matrix, k=-1)
-    features.append(corr_matrix[tril_indices])  # shape: (n_combinations, )
+    #corr_matrix = np.corrcoef(sample.T) # shape: (n_axes, n_axes)
+    #tril_indices = np.tril_indices_from(corr_matrix, k=-1)
+    #features.append(corr_matrix[tril_indices])  # shape: (n_combinations, )
 
     # Domínio da frequência
-    fft = extract_fft_features(sample, include_dc=False)    # shape: (n_freqs, n_axes)
+    #fft = extract_fft_features(sample, include_dc=False)    # shape: (n_freqs, n_axes)
 
-    features.append(np.mean(fft, axis=0))   # Média das magnitudes FFT
-    features.append(np.std(fft, axis=0))    # Desvio padrão das FFT
-    features.append(np.sum(fft**2, axis=0)) # Energia
-    features.append(np.argmax(fft, axis=0)) # Freq. Dominante (índice de máxima magnitude)
+    #features.append(np.mean(fft, axis=0))   # Média das magnitudes FFT
+    #features.append(np.std(fft, axis=0))    # Desvio padrão das FFT
+    #features.append(np.sum(fft**2, axis=0)) # Energia
+    #features.append(np.argmax(fft, axis=0)) # Freq. Dominante (índice de máxima magnitude)
 
     # Concatena tudo em um vetor 1D
     return np.concatenate(features)

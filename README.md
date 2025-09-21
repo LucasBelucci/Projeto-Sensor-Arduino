@@ -234,7 +234,7 @@ Sendo, a curva mais próxima do canto superior esquerdo indicativo de melhor des
 ![Comparação de FFT](Imagens/graficos/fft_comparison_20250611_214522.png)
 </details>
 <details>
-<summary> Distribuição das distâcias </summary>
+<summary> Distribuição das distâncias </summary>
 
 ![Distribuição das distâncias](Imagens/graficos/distance_distributions_20250611_214522_20250611_214547.png)
 

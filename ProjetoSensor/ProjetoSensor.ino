@@ -50,11 +50,23 @@ void setup() {
   accel.setDataRate(ADXL345_DATARATE_200_HZ);
 
   // Conectando WiFi
+  int n = WiFi.scanNetworks();
+  Serial.println("Redes encontradas: ");
+  for (int i =0; i < n; ++i){
+    Serial.print(i+1);
+    Serial.print(": ");
+    Serial.println(WiFi.SSID(i));
+  }
   Serial.print("Connecting to WiFI");
   WiFi.begin(SSID, PASSWORD);
+  
   while(WiFi.status() != WL_CONNECTED){
     blinkLED(1, 500);
     Serial.print(".");
+    Serial.println("\n Falha ao conectar ao Wi-Fi");
+    Serial.println("Status do WiFi: ");
+    Serial.println(WiFi.status());
+  
   }
   blinkLED(5, 50);
   Serial.printf("\nConnected! IP: %s\n", WiFi.localIP().toString().c_str());
@@ -86,42 +98,44 @@ void loop() {
   //}
 
   // Preparar JSON
-  DynamicJsonDocument json(3* JSON_ARRAY_SIZE(NUM_SAMPLES) + JSON_OBJECT_SIZE(3));
-  JsonArray x_data = json.createNestedArray("x");
-  JsonArray y_data = json.createNestedArray("y");
-  JsonArray z_data = json.createNestedArray("z");
+  
+  //DynamicJsonDocument json(3* JSON_ARRAY_SIZE(NUM_SAMPLES) + JSON_OBJECT_SIZE(3));
+  //JsonArray x_data = json.createNestedArray("x");
+  //JsonArray y_data = json.createNestedArray("y");
+  //JsonArray z_data = json.createNestedArray("z");
 
   // Coletar data
-  unsigned long startTime = millis();
-  int samples = 0;
+  //unsigned long startTime = millis();
+  //int samples = 0;
 
-  while (samples < NUM_SAMPLES){
-    if (millis() - startTime >= (samples * (1000/ SAMPLE_RATE))){
+  //while (samples < NUM_SAMPLES){
+    //if (millis() - startTime >= (samples * (1000/ SAMPLE_RATE))){
 
-      sensors_event_t event;
-      accel.getEvent(&event);
+    //  sensors_event_t event;
+     // accel.getEvent(&event);
 
-      x_data.add(event.acceleration.x);
-      y_data.add(event.acceleration.y);
-      z_data.add(event.acceleration.z);
+    //  x_data.add(event.acceleration.x);
+    //  y_data.add(event.acceleration.y);
+     // z_data.add(event.acceleration.z);
 
-      Serial.printf("Samples %d: X:%.2f Y:%.2f Z:%.2f\n",
-                  samples, event.acceleration.x, event.acceleration.y,
-                  event.acceleration.z);
+      //Serial.printf("Samples %d: X:%.2f Y:%.2f Z:%.2f\n",
+        //          samples, event.acceleration.x, event.acceleration.y,
+  //                event.acceleration.z);
+//
+    //  if (samples % 50 == 0) {
+      //  Serial.printf("Samples %d: X:%.2f Y:%.2f Z:%.2f\n",
+        //  samples, event.acceleration.x, event.acceleration.y,
+          //event.acceleration.z);
+      //}
+    //
+     // samples++;
+      //delay(100);
+    //}
+  //}
 
-      if (samples % 50 == 0) {
-        Serial.printf("Samples %d: X:%.2f Y:%.2f Z:%.2f\n",
-          samples, event.acceleration.x, event.acceleration.y,
-          event.acceleration.z);
-      }
-    
-      samples++;
-      delay(100);
-    }
-  }
-
-  digitalWrite(LED_PIN, HIGH);
-  sendData(json);
-  digitalWrite(LED_PIN, LOW);
-  delay(10);
+  //digitalWrite(LED_PIN, HIGH);
+  //sendData(json);
+  //digitalWrite(LED_PIN, LOW);
+  //delay(10);
+  
 }

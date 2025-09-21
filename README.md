@@ -21,13 +21,13 @@ Este projeto tem como objetivo construir um modelo capaz de captar as frequênci
 <details>
 <summary> Esquema de montagem do sistema </summary>
 
-![Modelo da conexão dos pinos para o sistema utilizando o microcontrolador ESP32 e o acelerômetro ADXL345](Imagens/Wiring_scheming.png)
+![Modelo da conexão dos pinos para o sistema utilizando o microcontrolador ESP32 e o acelerômetro ADXL345](Imagens/wiring_scheming.png)
 
 </details>
 <details>
 <summary> Sistema montado </summary>
 
-![Versão de testes do sistema montado utilizando o microcontrolador ESP32 e o acelerômetro ADXL345](Imagens/Real_circuit.png)
+![Versão de testes do sistema montado utilizando o microcontrolador ESP32 e o acelerômetro ADXL345](Imagens/real_circuit.png)
 
 </details>
 
